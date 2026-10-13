@@ -5,6 +5,8 @@ declare(strict_types=1);
 return [
     'placeholder' => 'Bir not yazın...',
     'title' => 'Notlar',
+    'show' => 'Notları göster',
+    'hide' => 'Notları gizle',
     'edit' => 'Düzenle',
     'delete' => 'Sil',
     'edited' => 'düzenlendi',

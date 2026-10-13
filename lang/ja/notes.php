@@ -3,6 +3,8 @@
 return [
     'placeholder' => 'メモを書く...',
     'title' => 'メモ',
+    'show' => 'メモを表示',
+    'hide' => 'メモを非表示',
     'edit' => '編集',
     'delete' => '削除',
     'edited' => '編集済み',

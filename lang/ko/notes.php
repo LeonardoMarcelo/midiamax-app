@@ -3,6 +3,8 @@
 return [
     'placeholder' => '메모를 작성하세요...',
     'title' => '메모',
+    'show' => '메모 보기',
+    'hide' => '메모 숨기기',
     'edit' => '편집',
     'delete' => '삭제',
     'edited' => '수정됨',

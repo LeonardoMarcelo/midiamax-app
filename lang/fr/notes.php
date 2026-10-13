@@ -3,6 +3,8 @@
 return [
     'placeholder' => 'Écrire une note...',
     'title' => 'Notes',
+    'show' => 'Afficher les notes',
+    'hide' => 'Masquer les notes',
     'edit' => 'Modifier',
     'delete' => 'Supprimer',
     'edited' => 'modifié',

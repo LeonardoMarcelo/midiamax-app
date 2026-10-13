@@ -804,31 +804,44 @@ defineExpose({ openDetails });
                     class="flex max-w-full shrink-0 flex-wrap items-center gap-1 max-sm:ms-auto"
                     :data-testid="`post-actions-${post.id}`"
                 >
-                    <CollapsibleTrigger v-if="showNotes" as-child>
-                        <Button
-                            variant="outline"
-                            class="data-[state=open]:bg-accent"
-                            :data-testid="`post-notes-trigger-${post.id}`"
-                        >
-                            <IconMessageCircleFilled
-                                v-if="noteCount > 0"
-                                class="size-4"
-                                :data-testid="`post-notes-filled-icon-${post.id}`"
-                            />
-                            <IconMessageCircle
-                                v-else
-                                class="size-4 text-muted-foreground"
-                                :data-testid="`post-notes-outline-icon-${post.id}`"
-                            />
-                            {{ $t('notes.title') }}
-                            <span
-                                v-if="noteCount > 0"
-                                class="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-selected px-1 text-[10px] leading-none font-medium text-primary-text tabular-nums"
-                                :data-testid="`post-notes-count-${post.id}`"
-                                >{{ noteCount > 99 ? '99+' : noteCount }}</span
+                    <Tooltip v-if="showNotes">
+                        <TooltipTrigger as-child>
+                        <CollapsibleTrigger as-child>
+                            <Button
+                                variant="outline"
+                                class="data-[state=open]:bg-accent"
+                                :data-testid="`post-notes-trigger-${post.id}`"
                             >
-                        </Button>
-                    </CollapsibleTrigger>
+                                <IconMessageCircleFilled
+                                    v-if="noteCount > 0"
+                                    class="size-4"
+                                    :data-testid="`post-notes-filled-icon-${post.id}`"
+                                />
+                                <IconMessageCircle
+                                    v-else
+                                    class="size-4 text-muted-foreground"
+                                    :data-testid="`post-notes-outline-icon-${post.id}`"
+                                />
+                                {{ $t('notes.title') }}
+                                <span
+                                    v-if="noteCount > 0"
+                                    class="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-selected px-1 text-[10px] leading-none font-medium text-primary-text tabular-nums"
+                                    :data-testid="`post-notes-count-${post.id}`"
+                                    >{{ noteCount > 99 ? '99+' : noteCount }}</span
+                                >
+                            </Button>
+                        </CollapsibleTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent
+                            :data-testid="`post-notes-tooltip-${post.id}`"
+                        >
+                            {{
+                                notesOpen
+                                    ? $t('notes.hide')
+                                    : $t('notes.show')
+                            }}
+                        </TooltipContent>
+                    </Tooltip>
                     <template v-if="isPending && canApprove">
                         <ApprovePostButton :post="post" :test-key="post.id" />
                         <Button

@@ -169,3 +169,27 @@ test('a note created an hour ago reads as past for a user whose zone is not the 
         ->toBe('an hour ago');
     $page->assertNoJavaScriptErrors();
 });
+
+test('the notes toggle says whether it shows or hides the notes', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create(['user_id' => $user->id]);
+    $workspace->members()->attach($user->id, membershipPivot('admin'));
+    $user->update(['current_workspace_id' => $workspace->id]);
+    $post = Post::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'content' => 'hello team']);
+    $this->actingAs($user);
+
+    $page = visit(route('app.posts.index', ['tab' => 'drafts']));
+    waitForPostNotesTestId($page, "post-notes-trigger-{$post->id}");
+
+    $page->hover("@post-notes-trigger-{$post->id}");
+    waitForPostNotesTestId($page, "post-notes-tooltip-{$post->id}");
+    $page->assertSeeIn("@post-notes-tooltip-{$post->id}", __('notes.show'));
+
+    $page->click("@post-notes-trigger-{$post->id}");
+    waitForPostNotesTestId($page, 'note-input');
+    $page->hover('@note-input')->hover("@post-notes-trigger-{$post->id}");
+    waitForPostNotesTestId($page, "post-notes-tooltip-{$post->id}");
+
+    $page->assertSeeIn("@post-notes-tooltip-{$post->id}", __('notes.hide'))
+        ->assertNoJavaScriptErrors();
+});

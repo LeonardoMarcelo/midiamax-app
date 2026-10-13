@@ -3,6 +3,8 @@
 return [
     'placeholder' => 'Napisz notatkę...',
     'title' => 'Notatki',
+    'show' => 'Pokaż notatki',
+    'hide' => 'Ukryj notatki',
     'edit' => 'Edytuj',
     'delete' => 'Usuń',
     'edited' => 'edytowano',

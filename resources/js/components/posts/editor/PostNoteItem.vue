@@ -85,25 +85,25 @@ const handleEditKeydown = (event: KeyboardEvent) => {
 <template>
     <div
         :data-note-id="note.id"
-        class="group/note relative flex gap-2.5 rounded-lg px-2 py-2 transition-colors"
+        class="group/note relative flex gap-3 rounded-lg px-2.5 py-2.5 transition-colors"
         :class="
             highlighted
                 ? 'bg-primary-subtle ring-2 ring-primary-strong'
-                : 'hover:bg-accent has-[[data-state=open]]:bg-accent'
+                : 'hover:bg-muted/60 has-[[data-state=open]]:bg-muted/60'
         "
         data-testid="note-item"
     >
         <Avatar
             :src="note.user.photo_url"
             :name="note.user.name"
-            class="size-7 text-[11px]"
+            class="size-8 text-xs"
             fallback-class="bg-sidebar-accent text-sidebar-accent-foreground"
         />
 
         <div class="min-w-0 flex-1">
-            <div class="flex min-h-7 items-center gap-1.5">
+            <div class="flex min-h-5 items-center gap-1.5">
                 <span
-                    class="truncate text-sm font-medium text-foreground"
+                    class="truncate text-sm font-semibold text-foreground"
                     data-testid="note-author"
                     >{{ note.user.name }}</span
                 >
@@ -192,7 +192,7 @@ const handleEditKeydown = (event: KeyboardEvent) => {
             <NoteBody
                 v-else
                 :body="note.body"
-                class="leading-relaxed text-foreground"
+                class="mt-0.5 leading-relaxed text-foreground"
             />
         </div>
     </div>

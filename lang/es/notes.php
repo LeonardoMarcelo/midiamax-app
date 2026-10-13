@@ -5,6 +5,8 @@ declare(strict_types=1);
 return [
     'placeholder' => 'Escribe una nota...',
     'title' => 'Notas',
+    'show' => 'Mostrar notas',
+    'hide' => 'Ocultar notas',
     'edit' => 'Editar',
     'delete' => 'Eliminar',
     'edited' => 'editado',

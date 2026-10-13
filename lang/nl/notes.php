@@ -3,6 +3,8 @@
 return [
     'placeholder' => 'Schrijf een notitie...',
     'title' => 'Notities',
+    'show' => 'Notities tonen',
+    'hide' => 'Notities verbergen',
     'edit' => 'Bewerken',
     'delete' => 'Verwijderen',
     'edited' => 'bewerkt',

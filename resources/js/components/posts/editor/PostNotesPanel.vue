@@ -271,7 +271,7 @@ watch(
 
             <div
                 v-else-if="notes.length === 0"
-                class="flex flex-col items-center px-6 py-8 text-center"
+                class="flex flex-col items-center px-6 py-6 text-center"
                 data-testid="notes-empty"
             >
                 <div
@@ -287,7 +287,7 @@ watch(
                 </p>
             </div>
 
-            <ul v-else class="flex flex-col gap-0.5 p-2">
+            <ul v-else class="flex flex-col gap-1 px-2 py-2">
                 <li v-for="note in notes" :key="note.id">
                     <PostNoteItem
                         :note="note"
@@ -301,21 +301,28 @@ watch(
         </div>
 
         <div class="shrink-0 border-t border-border p-3">
-            <div class="flex items-end gap-2">
+            <div
+                class="flex items-end gap-2 rounded-[20px] border border-border bg-card py-1.5 ps-4 pe-1.5 transition-colors focus-within:border-ring dark:bg-input/30"
+                data-testid="note-composer"
+            >
                 <textarea
                     ref="composerInput"
                     v-model="newBody"
                     rows="1"
-                    class="flex field-sizing-content max-h-28 min-h-8 w-full min-w-0 resize-none rounded-md border border-input bg-card px-2 py-[5px] text-sm leading-5 text-foreground transition-[color,box-shadow] outline-none placeholder:text-subtle-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring dark:bg-input/30"
+                    class="field-sizing-content max-h-28 min-h-7 w-full min-w-0 resize-none bg-transparent py-1 text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
                     :placeholder="$t('notes.placeholder')"
                     :aria-label="$t('notes.placeholder')"
                     data-testid="note-input"
                     @keydown="handleComposerKeydown"
                 />
-                <Button
+                <button
                     type="button"
-                    size="icon"
-                    class="shrink-0"
+                    class="inline-flex size-7 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring disabled:cursor-not-allowed"
+                    :class="
+                        canSend
+                            ? 'bg-primary-strong text-primary-strong-foreground hover:bg-primary-strong/90'
+                            : 'bg-secondary text-muted-foreground'
+                    "
                     :disabled="!canSend"
                     :aria-label="$t('notes.send')"
                     data-testid="note-send"
@@ -323,7 +330,7 @@ watch(
                 >
                     <IconLoader2 v-if="sending" class="size-4 animate-spin" />
                     <IconArrowUp v-else class="size-4" />
-                </Button>
+                </button>
             </div>
         </div>
     </div>
