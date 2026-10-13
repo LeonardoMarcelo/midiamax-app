@@ -462,7 +462,7 @@ watch(tagging, (isTagging) => {
                 </div>
 
                 <aside
-                    class="flex w-full shrink-0 flex-col gap-4 lg:w-70 lg:overflow-y-auto"
+                    class="flex w-full shrink-0 flex-col gap-4 lg:w-80 lg:overflow-y-auto"
                 >
                     <div
                         v-if="tabs.length > 1 || tabs[0] === 'thumbnail'"
