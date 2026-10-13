@@ -466,6 +466,62 @@ test('instagram-facebook callback hides an instagram already connected standalon
         ->and($this->workspace->socialAccounts()->count())->toBe(1);
 });
 
+test('instagram-facebook callback hides a standalone instagram whose login reports another id', function () {
+    SocialAccount::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'platform' => Platform::Instagram,
+        'platform_user_id' => 'app-scoped-ig',
+        'meta' => ['ig_user_id' => 'shared-ig'],
+    ]);
+
+    startSocialConnect($this->workspace->id, Platform::InstagramFacebook);
+
+    $socialiteUser = Mockery::mock(SocialiteUser::class);
+    $socialiteUser->token = 'test-user-token';
+
+    Socialite::shouldReceive('driver')
+        ->with('facebook')
+        ->andReturn(Mockery::mock()
+            ->shouldReceive('usingGraphVersion')->andReturnSelf()
+            ->shouldReceive('redirectUrl')->andReturnSelf()
+            ->shouldReceive('user')->andReturn($socialiteUser)
+            ->getMock());
+
+    $graphApi = config('trypost.platforms.instagram-facebook.graph_api');
+
+    Http::fake([
+        "{$graphApi}/me/permissions*" => Http::response(['data' => [['permission' => 'pages_show_list', 'status' => 'granted']]], 200),
+        "{$graphApi}/me?*" => Http::response(['id' => 'facebook_user_123', 'name' => 'User'], 200),
+        "{$graphApi}/me/businesses*" => Http::response(['data' => []], 200),
+        "{$graphApi}/me/accounts*" => Http::response([
+            'data' => [
+                [
+                    'id' => 'page-1',
+                    'name' => 'Shared Page',
+                    'access_token' => 'page-token',
+                    'instagram_business_account' => ['id' => 'shared-ig'],
+                ],
+            ],
+        ], 200),
+        "{$graphApi}/*" => Http::response([
+            'id' => 'shared-ig',
+            'username' => 'shared',
+            'name' => 'Shared',
+        ], 200),
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('app.social.instagram-facebook.callback'))
+        ->assertRedirect(route('app.social.connect.show', Platform::InstagramFacebook));
+
+    expect(socialConnectFailure())->toBe('all_connected');
+
+    expect($this->workspace->socialAccounts()
+        ->where('platform', Platform::InstagramFacebook->value)
+        ->exists())->toBeFalse()
+        ->and($this->workspace->socialAccounts()->count())->toBe(1);
+});
+
 test('instagram via facebook connects a page reached through a business portfolio', function () {
     startSocialConnect($this->workspace->id, Platform::InstagramFacebook);
 

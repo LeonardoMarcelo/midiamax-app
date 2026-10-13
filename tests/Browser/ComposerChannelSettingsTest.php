@@ -585,9 +585,10 @@ test('the instagram reel card adds collaborators and a checked trial reel, and a
         ->and(data_get($post->fresh()->meta, 'collaborators'))->toBe([]);
 });
 
-test('save and link saves the reel as a draft and opens the Facebook requirements to reconnect the account', function () {
+test('save and link keeps a scheduled reel scheduled and opens the Facebook requirements to reconnect the account', function () {
     fakeChannelSettingsApis();
-    $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramReel);
+    $video = [['id' => (string) Str::uuid(), 'type' => 'video', 'path' => 'medias/clip.mp4', 'url' => 'https://example.com/clip.mp4', 'mime_type' => 'video/mp4', 'original_filename' => 'clip.mp4']];
+    $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramReel, $video);
     $post->update(['status' => Status::Scheduled, 'scheduled_at' => now()->addDay()]);
 
     $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
@@ -601,7 +602,45 @@ test('save and link saves the reel as a draft and opens the Facebook requirement
     $page->assertMissing('@post-composer-dialog')
         ->assertPresent('@instagram-facebook-requirements-connect')
         ->assertNoJavaScriptErrors();
+    expect($post->fresh()->status)->toBe(Status::Scheduled);
+});
+
+test('save and link saves a draft reel as a draft before linking Facebook', function () {
+    fakeChannelSettingsApis();
+    $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramReel);
+
+    $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
+    waitForChannelSettingsTestId($page, 'instagram-music-add');
+
+    $page->click('@instagram-music-add');
+    waitForChannelSettingsTestId($page, 'instagram-music-save-and-link');
+    $page->click('@instagram-music-save-and-link');
+    waitForChannelSettingsTestId($page, 'instagram-facebook-requirements');
+
+    $page->assertMissing('@post-composer-dialog')->assertNoJavaScriptErrors();
     expect($post->fresh()->status)->toBe(Status::Draft);
+});
+
+test('an invalid collaborator in any position shows its error', function () {
+    fakeChannelSettingsApis();
+    $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramReel);
+
+    $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
+    waitForChannelSettingsTestId($page, 'instagram-collaborator-input');
+
+    $page->type('@instagram-collaborator-input', 'good_user')
+        ->keys('@instagram-collaborator-input', 'Enter');
+    waitForChannelSettingsTestId($page, 'instagram-collaborators-notice');
+    $page->click('@instagram-collaborators-notice-dismiss')
+        ->type('@instagram-collaborator-input', 'bad-name!')
+        ->click('@instagram-collaborator-add');
+    waitForChannelSettingsTestId($page, 'instagram-collaborator-bad-name!');
+
+    $page->click('@composer-save-draft');
+    waitForChannelSettingsCondition($page, "document.querySelector('[data-testid=\"instagram-collaborators\"]')?.closest('[data-testid=\"channel-settings-row\"]')?.textContent.includes(".json_encode(__('posts.form.instagram.collaborators.invalid')).')');
+
+    $page->assertSee(__('posts.form.instagram.collaborators.invalid'))->assertNoJavaScriptErrors();
+    expect(data_get($post->fresh()->meta, 'collaborators'))->toBeNull();
 });
 
 test('the instagram reel card picks music for an account connected through Facebook', function () {

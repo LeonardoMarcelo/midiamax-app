@@ -25,6 +25,9 @@ class SearchInstagramAudio
 {
     private const array AUDIO_TYPES = ['music', 'original_sound'];
 
+    /** Original sounds per search whose creator picture is looked up. */
+    private const int PICTURE_LOOKUPS = 10;
+
     /**
      * @return list<array{id: string, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
      *
@@ -73,7 +76,8 @@ class SearchInstagramAudio
     /**
      * The search lists an original sound without any picture; its own lookup
      * carries the creator's profile picture, which stands in for the cover.
-     * Looked up together and kept for a few hours, as the picture URL expires.
+     * Only the first few are looked up, together; a picture is kept for a few
+     * hours, as its URL expires, and a failed lookup for a few minutes.
      *
      * @param  Collection<int, array{id: string, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>  $sounds
      * @return Collection<int, array{id: string, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
@@ -81,6 +85,7 @@ class SearchInstagramAudio
     private static function withCreatorPictures(SocialAccount $account, Collection $sounds): Collection
     {
         $missing = $sounds
+            ->take(self::PICTURE_LOOKUPS)
             ->filter(fn (array $sound): bool => blank($sound['cover_url']) && ! Cache::has(self::pictureCacheKey($sound['id'])))
             ->pluck('id');
 
@@ -95,13 +100,15 @@ class SearchInstagramAudio
                     ]))
                 ->all());
 
-            collect($responses)
-                ->filter(fn (mixed $response): bool => $response instanceof Response && $response->successful())
-                ->each(fn (Response $response, string $id) => Cache::put(
+            collect($responses)->each(function (mixed $response, string $id): void {
+                $found = $response instanceof Response && $response->successful();
+
+                Cache::put(
                     self::pictureCacheKey($id),
-                    (string) data_get($response->json(), 'profile_picture_url', ''),
-                    now()->addHours(6),
-                ));
+                    $found ? (string) data_get($response->json(), 'profile_picture_url', '') : '',
+                    $found ? now()->addHours(6) : now()->addMinutes(10),
+                );
+            });
         }
 
         return $sounds->map(fn (array $sound): array => [

@@ -109,7 +109,15 @@ const writeFlag = (key: string): void => {
 const metaError = useMetaErrors(() => props.platformIndex);
 const audioError = metaError('audio');
 const collaboratorsError = metaError('collaborators');
-const firstCollaboratorError = metaError('collaborators.0');
+const collaboratorErrors = Array.from(
+    { length: MAX_COLLABORATORS },
+    (_, index) => metaError(`collaborators.${index}`),
+);
+const collaboratorError = computed(
+    () =>
+        collaboratorsError.value ??
+        collaboratorErrors.find((error) => error.value)?.value,
+);
 const trialError = metaError('trial_graduation');
 
 const isReel = computed(() => props.contentType === ContentType.InstagramReel);
@@ -786,7 +794,7 @@ onUnmounted(() => {
                     </div>
                 </PopoverContent>
             </Popover>
-            <InputError :message="collaboratorsError ?? firstCollaboratorError" />
+            <InputError :message="collaboratorError" />
         </SettingsRow>
 
         <SettingsRow v-if="isReel" :label="$t('posts.form.instagram.trial_reel.label')"

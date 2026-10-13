@@ -15,6 +15,7 @@ use App\Models\Workspace;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
@@ -503,4 +504,14 @@ test('reconnecting across a network variant moves only the posts still waiting t
         ->platform->toBe(Platform::LinkedIn)
         ->content_type->toBe(ContentType::LinkedInPost)
         ->and($failed->fresh()->platform)->toBe(Platform::LinkedIn);
+});
+
+test('a failed instagram account id lookup is asked once per account instance', function () {
+    $account = SocialAccount::factory()->instagram()->create(['platform_user_id' => 'app-scoped-1', 'meta' => []]);
+    Http::fake([config('trypost.platforms.instagram.graph_api').'/me*' => Http::response(['error' => ['code' => 190]], 400)]);
+
+    expect($account->isIdentity(Platform::InstagramFacebook, 'ig-pro-1'))->toBeFalse()
+        ->and($account->isIdentity(Platform::InstagramFacebook, 'ig-pro-2'))->toBeFalse();
+
+    Http::assertSentCount(1);
 });

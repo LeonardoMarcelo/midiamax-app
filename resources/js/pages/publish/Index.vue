@@ -751,7 +751,11 @@ const onComposerOpenChange = (open: boolean): void => {
     router.visit(listUrl(), { replace: true, preserveScroll: true });
 };
 
-const submitComposition = (composition: PostComposition): void => {
+const submitComposition = (
+    composition: PostComposition,
+    _createAnother?: boolean,
+    onSaved?: () => void,
+): void => {
     const editPost = props.editPost;
     if (!editPost) return;
     composerSubmitting.value = true;
@@ -759,6 +763,7 @@ const submitComposition = (composition: PostComposition): void => {
         preserveScroll: true,
         onSuccess: () => {
             composerOpen.value = false;
+            onSaved?.();
         },
         onFinish: () => {
             composerSubmitting.value = false;

@@ -316,13 +316,17 @@ class SocialController extends Controller
 
         $seated = $workspace->socialAccounts()
             ->whereIn('platform', $this->platform->networkPlatformValues())
-            ->get(['platform', 'platform_user_id']);
+            ->get();
 
         return array_values(array_filter(
             $identities,
             fn (array $identity): bool => ! $seated->contains(
-                fn (SocialAccount $account): bool => (string) $account->platform_user_id === data_get($identity, 'platform_user_id')
-                    && $account->platform->value !== data_get($identity, 'platform'),
+                fn (SocialAccount $account): bool => $account->platform->value !== data_get($identity, 'platform')
+                    && $account->isIdentity(
+                        SocialPlatform::from((string) data_get($identity, 'platform')),
+                        (string) data_get($identity, 'platform_user_id'),
+                        data_get($identity, 'attributes.meta.ig_user_id'),
+                    ),
             ),
         ));
     }

@@ -43,6 +43,9 @@ class SocialAccount extends Model
     /** @use HasFactory<SocialAccountFactory> */
     use HasFactory, HasUuids;
 
+    /** Whether instagramAccountId() already asked Instagram for this instance. */
+    private bool $instagramAccountIdLookedUp = false;
+
     public const int X_LONG_POST_LENGTH = 25000;
 
     /**
@@ -263,7 +266,8 @@ class SocialAccount extends Model
      * The Instagram professional account id: the platform user id when
      * connected through Facebook, `meta.ig_user_id` when connected through
      * Instagram Login. Accounts connected before that was stored read it once
-     * from Instagram and keep it.
+     * from Instagram and keep it; a failed read is not retried on the same
+     * instance, so a connect offering several identities asks only once.
      */
     public function instagramAccountId(): ?string
     {
@@ -280,6 +284,12 @@ class SocialAccount extends Model
         if (filled($stored)) {
             return (string) $stored;
         }
+
+        if ($this->instagramAccountIdLookedUp) {
+            return null;
+        }
+
+        $this->instagramAccountIdLookedUp = true;
 
         $fetched = rescue(fn (): mixed => Http::connectTimeout(3)
             ->timeout(8)

@@ -36,7 +36,11 @@ watch(
         if (playing) {
             el.currentTime = 0;
             el.volume = soundtrack?.videoVolume.value ?? 1;
-            void el.play().catch(() => soundtrack?.stop());
+            void el.play().catch((error: unknown) => {
+                if ((error as DOMException)?.name !== 'AbortError') {
+                    soundtrack?.stop();
+                }
+            });
         } else {
             el.pause();
         }

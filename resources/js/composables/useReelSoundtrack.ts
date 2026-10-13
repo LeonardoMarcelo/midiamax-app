@@ -31,7 +31,9 @@ const play = (audioId: string, url: string, volume: number): void => {
     audio.addEventListener('ended', stop);
     player = audio;
     playingAudioId.value = audioId;
-    void audio.play().catch(stop);
+    void audio.play().catch(() => {
+        if (player === audio) stop();
+    });
 };
 
 const setVolume = (volume: number): void => {

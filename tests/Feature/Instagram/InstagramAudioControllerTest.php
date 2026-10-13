@@ -164,3 +164,18 @@ test('an original sound shows its creator picture as the cover', function () {
 
     Http::assertSentCount(5);
 });
+
+test('looks up creator pictures for the first ten original sounds and remembers a failed lookup', function () {
+    $sounds = collect(range(1, 12))->map(fn (int $i): array => ['audio_id' => "sound-{$i}", 'title' => "Sound {$i}", 'ig_username' => "creator{$i}"])->all();
+
+    Http::fake([
+        "{$this->graph}/ig_audio?audio_type=music*" => Http::response(['audio' => []]),
+        "{$this->graph}/ig_audio?audio_type=original_sound*" => Http::response(['audio' => $sounds]),
+        "{$this->graph}/sound-*" => Http::response(['error' => ['code' => 1]], 500),
+    ]);
+
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'sound']))->assertOk();
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'sound']))->assertOk();
+
+    Http::assertSentCount(2 + 10 + 2);
+});

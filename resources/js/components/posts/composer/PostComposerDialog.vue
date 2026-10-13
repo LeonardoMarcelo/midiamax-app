@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router, useHttp, usePage } from '@inertiajs/vue3';
+import { useHttp, usePage } from '@inertiajs/vue3';
 import {
     IconAlertTriangle,
     IconArrowLeft,
@@ -258,6 +258,7 @@ const emit = defineEmits<{
         event: 'submit',
         composition: PostComposition,
         createAnother: boolean,
+        onSaved?: () => void,
     ): void;
 }>();
 
@@ -1811,7 +1812,10 @@ const onMediaEdited = async (changes: MediaEditChange[]): Promise<void> => {
     cropTarget.value = null;
 };
 
-const submit = (status: PostComposition['status']): void => {
+const submit = (
+    status: PostComposition['status'],
+    onSaved?: () => void,
+): void => {
     if (
         !canSubmit.value ||
         (status !== PostStatus.Draft && hasBlockingIssues.value)
@@ -1838,7 +1842,7 @@ const submit = (status: PostComposition['status']): void => {
         // Browser storage is optional; publishing must still work without it.
     }
     autosave.flush();
-    emit('submit', payload, createAnother.value && !props.postId);
+    emit('submit', payload, createAnother.value && !props.postId, onSaved);
 };
 
 const submitDraft = (): void => {
@@ -1846,17 +1850,21 @@ const submitDraft = (): void => {
 };
 
 const saveDraftAndLinkFacebook = (account: ComposerAccount): void => {
-    if (!canSubmit.value) return;
-    const stopSuccess = router.on('success', () => {
-        stopSuccess();
-        stopFinish();
+    const linkFacebook = (): void =>
         openConnectStep('instagram-facebook', account.id);
-    });
-    const stopFinish = router.on('finish', () => {
-        stopSuccess();
-        stopFinish();
-    });
-    submitDraft();
+
+    if (movesToDrafts.value) {
+        submit(
+            scheduleMode.value === 'now'
+                ? PostStatus.Publishing
+                : PostStatus.Scheduled,
+            linkFacebook,
+        );
+
+        return;
+    }
+
+    submit(PostStatus.Draft, linkFacebook);
 };
 
 const submitSelectedSchedule = (): void => {
