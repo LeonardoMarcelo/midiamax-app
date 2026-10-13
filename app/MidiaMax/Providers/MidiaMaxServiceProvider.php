@@ -1,0 +1,70 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\MidiaMax\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * Ponto de entrada unico de toda customizacao MidiaMax.
+ *
+ * Regra do fork: nada nosso vive dentro de arquivo do upstream. Binds que
+ * substituem classes do TryPost, listeners, rotas, migrations e traducoes
+ * entram aqui. Cada arquivo do upstream que precisar ser tocado tem que ser
+ * registrado em CUSTOMIZATIONS.md — e vai ser conflito em todo merge.
+ */
+class MidiaMaxServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any MidiaMax services.
+     *
+     * Para trocar uma implementacao do upstream, faca bind aqui em vez de
+     * editar a classe original:
+     *
+     *   $this->app->bind(\App\Services\Foo::class, \App\MidiaMax\Services\Foo::class);
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any MidiaMax services.
+     */
+    public function boot(): void
+    {
+        $this->loadMidiaMaxMigrations();
+        $this->loadMidiaMaxRoutes();
+        $this->loadMidiaMaxTranslations();
+    }
+
+    /**
+     * Migrations proprias ficam fora de database/migrations para que merges do
+     * upstream nunca conflitem e os nomes de arquivo nunca colidam.
+     */
+    protected function loadMidiaMaxMigrations(): void
+    {
+        $this->loadMigrationsFrom(database_path('migrations/midiamax'));
+    }
+
+    /**
+     * Rotas proprias em arquivo proprio. Carregadas depois das do upstream, o
+     * que importa se o upstream tiver fallback/catch-all.
+     */
+    protected function loadMidiaMaxRoutes(): void
+    {
+        Route::middleware('web')->group(base_path('routes/midiamax.php'));
+    }
+
+    /**
+     * Strings novas vivem no namespace "midiamax::" (__('midiamax::brand.x')).
+     * Sobrescrever string do upstream editando lang/pt-BR/*.php e conflito
+     * garantido no proximo release.
+     */
+    protected function loadMidiaMaxTranslations(): void
+    {
+        $this->loadTranslationsFrom(base_path('lang/midiamax'), 'midiamax');
+    }
+}

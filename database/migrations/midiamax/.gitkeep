@@ -1,0 +1,3 @@
+Migrations da MidiaMax ficam aqui, carregadas por MidiaMaxServiceProvider.
+Nunca coloque migration nossa em database/migrations/ (conflito a cada release
+do upstream, e risco de colisao de nome de arquivo).

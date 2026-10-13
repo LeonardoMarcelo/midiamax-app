@@ -1,0 +1,116 @@
+name: MidiaMax — check de upstream
+
+# Toda segunda tenta o merge da release mais nova do TryPost num merge descartavel
+# e abre uma issue com o resultado. Serve para descobrir o estrago ANTES de
+# precisar atualizar com urgencia (ex.: correcao de seguranca).
+#
+# Nao altera nada no repo: o merge e sempre abortado.
+#
+# Nota de seguranca: nomes de tag vem do upstream, ou seja, de terceiro. Nunca
+# interpolar ${{ }} dentro de run: — tudo passa por env: e e usado com "$VAR".
+
+on:
+  schedule:
+    - cron: '0 12 * * 1' # segunda, 09:00 BRT
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Merge de teste
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (historico completo)
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Buscar tags do upstream
+        run: |
+          git remote add upstream https://github.com/trypostit/trypost.git
+          git fetch upstream --tags --quiet
+          git config user.email "ci@midiamax.local"
+          git config user.name "MidiaMax CI"
+
+      - name: Identificar release pendente
+        id: tag
+        run: |
+          base="$(git tag --list 'v*' --merged HEAD --sort=-creatordate | head -1)"
+          pending="$(git tag --list 'v*' --no-merged HEAD --sort=-creatordate | head -1)"
+          printf 'base=%s\n' "$base" >> "$GITHUB_OUTPUT"
+          printf 'pending=%s\n' "$pending" >> "$GITHUB_OUTPUT"
+          if [ -z "$pending" ]; then
+            echo "Nenhuma release nova. Base atual: ${base}."
+          else
+            echo "Base ${base} -> pendente ${pending}"
+          fi
+
+      - name: Merge de teste
+        id: merge
+        if: steps.tag.outputs.pending != ''
+        env:
+          TAG: ${{ steps.tag.outputs.pending }}
+          BASE: ${{ steps.tag.outputs.base }}
+        run: |
+          {
+            echo "### Tamanho"
+            echo '```'
+            git diff --stat "$BASE" "$TAG" | tail -1
+            echo '```'
+            echo
+            echo "### Arquivos do upstream que nos modificamos (CUSTOMIZATIONS.md)"
+            echo '```'
+            git diff --stat "$BASE" "$TAG" -- bootstrap/providers.php resources/css/app.css .gitattributes || true
+            echo '```'
+            echo
+            echo "### Variaveis de ambiente novas (refletir no midiamax-infra)"
+            echo '```'
+            git diff "$BASE" "$TAG" -- .env.example | grep -E "^\+[A-Z_]+=" || echo "nenhuma"
+            echo '```'
+          } > report.md
+
+          if git merge --no-commit --no-ff "$TAG" >/dev/null 2>&1; then
+            printf 'clean=true\n' >> "$GITHUB_OUTPUT"
+            printf '\n### Merge\n\n:white_check_mark: limpo, sem conflito.\n' >> report.md
+          else
+            printf 'clean=false\n' >> "$GITHUB_OUTPUT"
+            {
+              echo
+              echo "### Merge"
+              echo
+              echo ":warning: conflito em:"
+              echo '```'
+              git diff --name-only --diff-filter=U
+              echo '```'
+            } >> report.md
+          fi
+          git merge --abort 2>/dev/null || true
+
+      - name: Abrir issue
+        if: steps.tag.outputs.pending != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.pending }}
+          BASE: ${{ steps.tag.outputs.base }}
+        run: |
+          title="Upstream ${TAG} disponivel"
+          existing="$(gh issue list --state open --search "in:title ${TAG}" --json number,title \
+            --jq --arg t "$title" '.[] | select(.title == $t) | .number' | head -1)"
+
+          {
+            printf 'Release **%s** do TryPost ainda nao integrada (base: `%s`).\n\n' "$TAG" "$BASE"
+            cat report.md
+            printf '\n---\n'
+            printf 'Para integrar: `scripts/midiamax/atualizar-upstream.sh %s`\n' "$TAG"
+            printf 'Runbook: `docs-midiamax/02-runbook-atualizacao.md`\n\n'
+            printf 'Release notes: https://github.com/trypostit/trypost/releases/tag/%s\n' "$TAG"
+          } > body.md
+
+          if [ -n "$existing" ]; then
+            echo "Issue #${existing} ja existe — sem spam."
+          else
+            gh issue create --title "$title" --body-file body.md
+          fi
