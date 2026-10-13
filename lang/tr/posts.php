@@ -992,6 +992,8 @@ return [
             'move_up' => 'Yukarı taşı',
             'move_down' => 'Aşağı taşı',
             'duplicate' => 'Gönderiyi çoğalt',
+            'share_link' => 'Bir gönderide paylaş',
+            'copy_link' => 'Bağlantıyı kopyala',
             'move_to_drafts' => 'Taslaklara taşı',
             'delete' => 'Gönderiyi sil',
             'add_to_queue' => 'Kuyruğa ekle',

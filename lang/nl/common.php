@@ -7,6 +7,16 @@ return [
 
     'back' => 'Terug',
 
+    'unsaved_changes' => [
+
+        'title' => 'Wijzigingen negeren?',
+
+        'description' => 'Je wijzigingen in dit bericht zijn niet opgeslagen. Als je nu weggaat, gaan ze verloren.',
+
+        'discard' => 'Negeren',
+
+    ],
+
     'confirm_modal' => [
         'type' => 'Typ',
         'to_confirm' => 'om te bevestigen.',

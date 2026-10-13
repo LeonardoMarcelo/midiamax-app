@@ -124,6 +124,8 @@ return [
     'posts.form.youtube.visibility' => 13,
     'posts.list_view' => 6,
     'posts.publish.actions.add_to_queue' => 28,
+    'posts.publish.actions.copy_link' => 19,
+    'posts.publish.actions.share_link' => 29,
     'posts.publish.in_google_review' => 28,
     'settings.api_keys.description' => 42,
     'settings.members.access.admin_description' => 41,

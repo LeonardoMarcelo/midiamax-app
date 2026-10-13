@@ -7,6 +7,16 @@ return [
 
     'back' => 'Indietro',
 
+    'unsaved_changes' => [
+
+        'title' => 'Annullare le modifiche?',
+
+        'description' => 'Le modifiche a questo post non sono state salvate. Se esci ora, andranno perse.',
+
+        'discard' => 'Annulla modifiche',
+
+    ],
+
     'confirm_modal' => [
         'type' => 'Digita',
         'to_confirm' => 'per confermare.',

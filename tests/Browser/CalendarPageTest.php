@@ -458,7 +458,7 @@ test('a published post popover shows its metrics, go to post and the sent menu',
     waitForCalendarTestId($page, "post-card-menu-content-{$post->id}");
 
     expect($page->script("Array.from(document.querySelectorAll('[data-testid=\"post-card-menu-content-{$post->id}\"] [role=\"menuitem\"]')).map((element) => element.dataset.testid)"))
-        ->toBe(["post-duplicate-{$post->id}", "post-details-open-{$post->id}"]);
+        ->toBe(["post-duplicate-{$post->id}", "post-details-open-{$post->id}", "post-share-link-{$post->id}", "post-copy-link-{$post->id}"]);
 
     $page->click("@post-details-open-{$post->id}");
     waitForCalendarTestId($page, "post-details-{$post->id}");

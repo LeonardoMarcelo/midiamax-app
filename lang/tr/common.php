@@ -7,6 +7,16 @@ return [
 
     'back' => 'Geri',
 
+    'unsaved_changes' => [
+
+        'title' => 'Değişiklikler silinsin mi?',
+
+        'description' => 'Bu gönderideki değişiklikler kaydedilmedi. Şimdi çıkarsan kaybolacaklar.',
+
+        'discard' => 'Sil',
+
+    ],
+
     'confirm_modal' => [
         'type' => 'Yazın:',
         'to_confirm' => 'onaylamak için.',

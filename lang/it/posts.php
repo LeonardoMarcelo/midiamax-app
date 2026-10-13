@@ -990,6 +990,8 @@ return [
             'move_up' => 'Sposta su',
             'move_down' => 'Sposta giù',
             'duplicate' => 'Duplica post',
+            'share_link' => 'Condividi in un post',
+            'copy_link' => 'Copia link',
             'move_to_drafts' => 'Sposta nelle bozze',
             'delete' => 'Elimina post',
             'add_to_queue' => 'Aggiungi alla coda',

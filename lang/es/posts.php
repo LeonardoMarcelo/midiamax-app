@@ -991,6 +991,8 @@ return [
             'move_up' => 'Subir',
             'move_down' => 'Bajar',
             'duplicate' => 'Duplicar post',
+            'share_link' => 'Compartir en una publicación',
+            'copy_link' => 'Copiar enlace',
             'move_to_drafts' => 'Mover a borradores',
             'delete' => 'Eliminar post',
             'add_to_queue' => 'Añadir a la cola',

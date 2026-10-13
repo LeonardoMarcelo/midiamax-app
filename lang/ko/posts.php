@@ -990,6 +990,8 @@ return [
             'move_up' => '위로 이동',
             'move_down' => '아래로 이동',
             'duplicate' => '게시물 복제',
+            'share_link' => '게시물에서 링크 공유',
+            'copy_link' => '링크 복사',
             'move_to_drafts' => '임시 저장으로 이동',
             'delete' => '게시물 삭제',
             'add_to_queue' => '대기열에 추가',

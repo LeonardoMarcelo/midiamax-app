@@ -990,6 +990,8 @@ return [
             'move_up' => '上に移動',
             'move_down' => '下に移動',
             'duplicate' => '投稿を複製',
+            'share_link' => '投稿でリンクを共有',
+            'copy_link' => 'リンクをコピー',
             'move_to_drafts' => '下書きに移動',
             'delete' => '投稿を削除',
             'add_to_queue' => 'キューに追加',

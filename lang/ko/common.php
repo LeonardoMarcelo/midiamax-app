@@ -7,6 +7,16 @@ return [
 
     'back' => '뒤로',
 
+    'unsaved_changes' => [
+
+        'title' => '변경 사항을 삭제할까요?',
+
+        'description' => '이 게시물의 변경 사항이 저장되지 않았습니다. 지금 나가면 사라집니다.',
+
+        'discard' => '삭제',
+
+    ],
+
     'confirm_modal' => [
         'type' => '입력',
         'to_confirm' => '하여 확인하세요.',

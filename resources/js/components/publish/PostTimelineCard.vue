@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useAtLeastBreakpoint } from '@/composables/useBreakpoint';
 import { useDisplayTimezone } from '@/composables/useDisplayTimezone';
+import { openPostComposer } from '@/composables/useGlobalPostComposer';
 import {
     getContentTypeBadgeKey,
     getPlatformLabel,
@@ -62,7 +63,9 @@ import dayjs from '@/dayjs';
 import { isImage, isVideo } from '@/lib/mediaType';
 import { compactPublicationMetrics } from '@/lib/publicationMetrics';
 import { recurrenceRuleOf } from '@/lib/recurrence';
+import { copyToClipboard } from '@/lib/utils';
 import { videoFrameUrl } from '@/lib/videoFrame';
+import type { SidebarChannel } from '@/types/channel';
 import { Platform } from '@/types/platform';
 import {
     PostOrigin,
@@ -323,6 +326,21 @@ const open = (): void => {
     openDetails();
 };
 
+const sharePostLink = (post: PostCard): void => {
+    if (!post.platform_url) return;
+    openPostComposer({
+        socialAccountIds: (
+            (page.props.channels as SidebarChannel[] | undefined) ?? []
+        ).map((channel) => channel.id),
+        draft: {
+            content: post.platform_url,
+            media: [],
+            scheduled_at: null,
+            label_ids: [],
+        },
+    });
+};
+
 const runPostAction = (action: PostCardMenuAction, post: PostCard): void => {
     switch (action) {
         case 'publish_now':
@@ -340,6 +358,12 @@ const runPostAction = (action: PostCardMenuAction, post: PostCard): void => {
             break;
         case 'details':
             detailsOpen.value = true;
+            break;
+        case 'share_link':
+            sharePostLink(post);
+            break;
+        case 'copy_link':
+            if (post.platform_url) void copyToClipboard(post.platform_url);
             break;
         case 'delete':
             deletePost(post);

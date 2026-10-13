@@ -7,6 +7,16 @@ return [
 
     'back' => 'Volver',
 
+    'unsaved_changes' => [
+
+        'title' => '¿Descartar los cambios?',
+
+        'description' => 'Los cambios de esta publicación no se han guardado. Si sales ahora, se perderán.',
+
+        'discard' => 'Descartar',
+
+    ],
+
     'confirm_modal' => [
         'type' => 'Escribe',
         'to_confirm' => 'para confirmar.',

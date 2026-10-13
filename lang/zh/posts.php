@@ -990,6 +990,8 @@ return [
             'move_up' => '上移',
             'move_down' => '下移',
             'duplicate' => '复制帖子',
+            'share_link' => '在帖子中分享链接',
+            'copy_link' => '复制链接',
             'move_to_drafts' => '移至草稿',
             'delete' => '删除帖子',
             'add_to_queue' => '加入队列',

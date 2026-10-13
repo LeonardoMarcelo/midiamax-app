@@ -101,6 +101,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import UnsavedChangesDialog from '@/components/UnsavedChangesDialog.vue';
 import { useAtLeastBreakpoint, useBelowBreakpoint } from '@/composables/useBreakpoint';
 import { useCanHover } from '@/composables/useCanHover';
 import {
@@ -146,6 +147,7 @@ import {
     type NetworkGroup,
     type PostComposition,
 } from '@/composables/usePostComposition';
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges';
 import { useWorkspaceAbilities } from '@/composables/useWorkspaceAbilities';
 import { useXLinkDefuser } from '@/composables/useXLinkDefuser';
 import date from '@/date';
@@ -1842,7 +1844,10 @@ const submit = (
         // Browser storage is optional; publishing must still work without it.
     }
     autosave.flush();
-    emit('submit', payload, createAnother.value && !props.postId, onSaved);
+    emit('submit', payload, createAnother.value && !props.postId, () => {
+        saved.value = true;
+        onSaved?.();
+    });
 };
 
 const submitDraft = (): void => {
@@ -2057,7 +2062,51 @@ const discardUnfinishedPost = (): void => {
     resumeOpen.value = false;
 };
 
-const close = (): void => emit('update:open', false);
+const editingSavedPost = Boolean(props.initialPost || props.postId);
+const saved = ref(false);
+const openedSnapshot = ref<string | null>(null);
+
+const editSnapshot = (): string =>
+    JSON.stringify({
+        content: composition.content.value,
+        media: composition.media.value.map((item) => [
+            item.id,
+            item.meta ?? null,
+        ]),
+        overrides: composition.overrides.value,
+        labels: composition.labelIds.value,
+        scheduledAt: composition.scheduledAt.value,
+    });
+
+onMounted(async () => {
+    await nextTick();
+    openedSnapshot.value = editSnapshot();
+});
+
+/**
+ * Only an edit of a saved post can lose work: a new post is autosaved and
+ * offered back the next time the composer opens.
+ */
+const hasUnsavedChanges = (): boolean =>
+    editingSavedPost &&
+    props.open &&
+    !saved.value &&
+    !props.submitting &&
+    openedSnapshot.value !== null &&
+    editSnapshot() !== openedSnapshot.value;
+
+const unsavedChanges = useUnsavedChanges(hasUnsavedChanges);
+
+const close = (): void =>
+    unsavedChanges.guard(() => emit('update:open', false));
+
+const onDialogOpenChange = (value: boolean): void => {
+    if (value) {
+        emit('update:open', true);
+        return;
+    }
+    close();
+};
 </script>
 
 <template>
@@ -2265,13 +2314,13 @@ const close = (): void => emit('update:open', false);
         </div>
         </template>
     </DefineScheduleMenu>
-    <Dialog :open="open" @update:open="emit('update:open', $event)">
+    <Dialog :open="open" @update:open="onDialogOpenChange">
         <DialogContent
-            class="motion-resize top-0 left-0 flex h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 sm:top-1/2 sm:left-1/2 sm:max-w-none sm:-translate-x-1/2 sm:-translate-y-1/2"
+            class="motion-resize top-0 left-0 flex h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 sm:max-w-none"
             :class="
                 expandedDialog
-                    ? 'sm:h-dvh sm:max-h-dvh sm:w-screen sm:rounded-none'
-                    : 'sm:h-[calc(100dvh-3rem)] sm:max-h-[888px] sm:w-[min(1280px,calc(100vw-3rem))] sm:rounded-2xl'
+                    ? 'sm:top-0 sm:left-0 sm:h-dvh sm:max-h-dvh sm:w-screen sm:rounded-none'
+                    : 'sm:top-[round(down,calc((100dvh_-_min(100dvh_-_3rem,888px))_/_2),1px)] sm:left-[round(down,calc((100vw_-_min(1280px,100vw_-_3rem))_/_2),1px)] sm:h-[calc(100dvh-3rem)] sm:max-h-[888px] sm:w-[min(1280px,calc(100vw-3rem))] sm:rounded-2xl'
             "
             :show-close-button="false"
             :aria-describedby="undefined"
@@ -3571,6 +3620,11 @@ const close = (): void => emit('update:open', false);
     <UnsplashDialog
         v-model:open="unsplashOpen"
         @picked="onUnsplashPicked"
+    />
+    <UnsavedChangesDialog
+        v-model:open="unsavedChanges.confirming.value"
+        @discard="unsavedChanges.discard"
+        @keep="unsavedChanges.keepEditing"
     />
     <AlertDialog v-model:open="confirmingBack">
         <AlertDialogContent

@@ -990,6 +990,8 @@ return [
             'move_up' => 'Monter',
             'move_down' => 'Descendre',
             'duplicate' => 'Dupliquer la publication',
+            'share_link' => 'Partager dans une publication',
+            'copy_link' => 'Copier le lien',
             'move_to_drafts' => 'Déplacer vers les brouillons',
             'delete' => 'Supprimer la publication',
             'add_to_queue' => 'Ajouter à la file d\'attente',

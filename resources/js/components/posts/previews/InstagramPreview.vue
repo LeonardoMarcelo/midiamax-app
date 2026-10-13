@@ -153,7 +153,7 @@ const caption = computed((): string =>
             <IconDotsVertical class="size-[18px]" />
         </div>
         <div
-            class="relative w-full bg-black"
+            class="relative w-full bg-muted"
             :style="{ paddingBottom: `${feedAspectPadding}%` }"
             data-testid="instagram-feed-media"
         >

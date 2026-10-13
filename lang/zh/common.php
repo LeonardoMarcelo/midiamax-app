@@ -7,6 +7,16 @@ return [
 
     'back' => '返回',
 
+    'unsaved_changes' => [
+
+        'title' => '放弃更改？',
+
+        'description' => '此帖子的更改尚未保存。如果现在离开，这些更改将会丢失。',
+
+        'discard' => '放弃',
+
+    ],
+
     'confirm_modal' => [
         'type' => '输入',
         'to_confirm' => '以确认。',

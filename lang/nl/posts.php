@@ -990,6 +990,8 @@ return [
             'move_up' => 'Omhoog',
             'move_down' => 'Omlaag',
             'duplicate' => 'Post dupliceren',
+            'share_link' => 'Delen in een bericht',
+            'copy_link' => 'Link kopiëren',
             'move_to_drafts' => 'Naar concepten verplaatsen',
             'delete' => 'Post verwijderen',
             'add_to_queue' => 'Aan wachtrij toevoegen',

@@ -992,6 +992,8 @@ return [
             'move_up' => 'Nach oben',
             'move_down' => 'Nach unten',
             'duplicate' => 'Beitrag duplizieren',
+            'share_link' => 'In einem Beitrag teilen',
+            'copy_link' => 'Link kopieren',
             'move_to_drafts' => 'In Entwürfe verschieben',
             'delete' => 'Beitrag löschen',
             'add_to_queue' => 'Zur Warteschlange hinzufügen',
