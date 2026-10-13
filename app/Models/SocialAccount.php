@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 #[ObservedBy([SocialAccountObserver::class, ComposerVersionObserver::class])]
@@ -196,7 +197,7 @@ class SocialAccount extends Model
             $reconnect?->workspace_id === $workspace->id
             && $reconnect->platform->network() === $platform->network()
         ) {
-            if ((string) $reconnect->platform_user_id !== $platformUserId) {
+            if (! $reconnect->isIdentity($platform, $platformUserId, data_get($values, 'meta.ig_user_id'))) {
                 throw NetworkAlreadyConnectedException::identityMismatch($platform);
             }
 
@@ -231,6 +232,71 @@ class SocialAccount extends Model
         }
 
         return $account;
+    }
+
+    /**
+     * Whether an identity a provider returned is this account: the same
+     * platform user id, or, across the two Instagram platforms, the same
+     * Instagram professional account id, since Instagram Login reports an
+     * app-scoped id where Facebook reports the account id.
+     */
+    public function isIdentity(SocialPlatform $platform, string $platformUserId, mixed $instagramUserId = null): bool
+    {
+        if ((string) $this->platform_user_id === $platformUserId) {
+            return true;
+        }
+
+        if ($platform === $this->platform) {
+            return false;
+        }
+
+        $identityAccountId = match ($platform) {
+            SocialPlatform::InstagramFacebook => $platformUserId,
+            SocialPlatform::Instagram => filled($instagramUserId) ? (string) $instagramUserId : null,
+            default => null,
+        };
+
+        return filled($identityAccountId) && $identityAccountId === $this->instagramAccountId();
+    }
+
+    /**
+     * The Instagram professional account id: the platform user id when
+     * connected through Facebook, `meta.ig_user_id` when connected through
+     * Instagram Login. Accounts connected before that was stored read it once
+     * from Instagram and keep it.
+     */
+    public function instagramAccountId(): ?string
+    {
+        if ($this->platform === SocialPlatform::InstagramFacebook) {
+            return (string) $this->platform_user_id;
+        }
+
+        if ($this->platform !== SocialPlatform::Instagram) {
+            return null;
+        }
+
+        $stored = data_get($this->meta, 'ig_user_id');
+
+        if (filled($stored)) {
+            return (string) $stored;
+        }
+
+        $fetched = rescue(fn (): mixed => Http::connectTimeout(3)
+            ->timeout(8)
+            ->get(config('trypost.platforms.instagram.graph_api').'/me', [
+                'fields' => 'user_id',
+                'access_token' => $this->access_token,
+            ])
+            ->throw()
+            ->json('user_id'), report: false);
+
+        if (blank($fetched)) {
+            return null;
+        }
+
+        $this->forceFill(['meta' => [...($this->meta ?? []), 'ig_user_id' => (string) $fetched]])->saveQuietly();
+
+        return (string) $fetched;
     }
 
     /**

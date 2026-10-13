@@ -657,3 +657,20 @@ html {
         animation: motion-progress-sweep 1.6s ease-in-out infinite;
     }
 }
+
+@keyframes motion-sound-wave {
+    0%,
+    100% {
+        transform: scaleY(0.35);
+    }
+    50% {
+        transform: scaleY(1);
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .motion-sound-wave > span {
+        transform-origin: center;
+        animation: motion-sound-wave 0.9s ease-in-out infinite;
+    }
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useHttp, usePage } from '@inertiajs/vue3';
+import { router, useHttp, usePage } from '@inertiajs/vue3';
 import {
     IconAlertTriangle,
     IconArrowLeft,
@@ -1079,7 +1079,8 @@ const assistantChannel = computed<AssistantChannel | null>(() => {
         limit: typeof limit === 'number' ? limit : null,
     };
 });
-const { open: openConnectDialog } = useConnectChannelDialog();
+const { open: openConnectDialog, openAt: openConnectStep } =
+    useConnectChannelDialog();
 
 const canSubmit = computed(
     () =>
@@ -1842,6 +1843,20 @@ const submit = (status: PostComposition['status']): void => {
 
 const submitDraft = (): void => {
     submit(PostStatus.Draft);
+};
+
+const saveDraftAndLinkFacebook = (account: ComposerAccount): void => {
+    if (!canSubmit.value) return;
+    const stopSuccess = router.on('success', () => {
+        stopSuccess();
+        stopFinish();
+        openConnectStep('instagram-facebook', account.id);
+    });
+    const stopFinish = router.on('finish', () => {
+        stopSuccess();
+        stopFinish();
+    });
+    submitDraft();
 };
 
 const submitSelectedSchedule = (): void => {
@@ -3180,6 +3195,11 @@ const close = (): void => emit('update:open', false);
                                                 group.key,
                                                 'meta',
                                                 $event,
+                                            )
+                                        "
+                                        @link-facebook="
+                                            saveDraftAndLinkFacebook(
+                                                group.anchor,
                                             )
                                         "
                                     />

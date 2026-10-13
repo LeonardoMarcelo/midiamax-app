@@ -306,7 +306,11 @@ class SocialController extends Controller
         if ($reconnect !== null) {
             return array_values(array_filter(
                 $identities,
-                fn (array $identity): bool => data_get($identity, 'platform_user_id') === (string) $reconnect->platform_user_id,
+                fn (array $identity): bool => $reconnect->isIdentity(
+                    SocialPlatform::from((string) data_get($identity, 'platform')),
+                    (string) data_get($identity, 'platform_user_id'),
+                    data_get($identity, 'attributes.meta.ig_user_id'),
+                ),
             ));
         }
 

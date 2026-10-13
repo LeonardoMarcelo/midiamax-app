@@ -1034,3 +1034,32 @@ test('publishing a youtube post with neither a title nor text is rejected in MCP
         ->assertHasErrors([__('posts.form.youtube.title_required')]);
     Queue::assertNotPushed(PublishPost::class);
 });
+
+test('create post persists instagram collaborators and trial reel meta', function () {
+    $instagram = SocialAccount::factory()->create(['workspace_id' => $this->workspace->id, 'platform' => Platform::Instagram]);
+
+    TryPostServer::actingAs($this->user)
+        ->tool(CreatePostTool::class, [
+            'content' => 'Reel',
+            'social_account_id' => $instagram->id,
+            'content_type' => ContentType::InstagramReel->value,
+            'meta' => ['collaborators' => ['@alice'], 'trial_graduation' => 'SS_PERFORMANCE'],
+        ])
+        ->assertOk();
+
+    expect(Post::where('social_account_id', $instagram->id)->sole()->meta)
+        ->toEqual(['collaborators' => ['alice'], 'trial_graduation' => 'SS_PERFORMANCE']);
+});
+
+test('publish post rejects instagram music on an account not connected through Facebook', function () {
+    $instagram = SocialAccount::factory()->create(['workspace_id' => $this->workspace->id, 'platform' => Platform::Instagram]);
+    $post = Post::factory()->forAccount($instagram, ContentType::InstagramReel)->create([
+        'user_id' => $this->user->id,
+        'status' => PostStatus::Draft,
+        'meta' => ['audio' => ['id' => 'audio-1']],
+    ]);
+
+    TryPostServer::actingAs($this->user)
+        ->tool(PublishPostTool::class, ['post_id' => $post->id])
+        ->assertHasErrors([__('posts.form.instagram.music.requires_facebook')]);
+});

@@ -61,7 +61,7 @@ const selectPlatform = (platform: string): void => {
 
 const connectInstagramFacebook = (): void => {
     emit('close');
-    openConnect(Platform.InstagramFacebook);
+    openConnect(Platform.InstagramFacebook, props.state.reconnectId);
 };
 
 const selectInstagramMethod = (method: string): void => {

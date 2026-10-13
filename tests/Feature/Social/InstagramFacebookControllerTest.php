@@ -769,3 +769,59 @@ test('a reconnect keeps the handle it had when the lookup never ran', function (
         ->and($account->getRawOriginal('avatar_url'))->toBe('avatars/kept.jpg')
         ->and($account->access_token)->toBe('fresh-token');
 });
+
+test('reconnecting a standalone instagram card through facebook moves it to instagram via facebook', function () {
+    $account = SocialAccount::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'platform' => Platform::Instagram,
+        'platform_user_id' => 'app-scoped-1',
+        'username' => 'mybiz',
+        'access_token' => 'instagram-token',
+        'meta' => ['account_type' => 'BUSINESS'],
+    ]);
+    Http::fake([config('trypost.platforms.instagram.graph_api').'/me*' => Http::response(['user_id' => 'ig-pro-1'])]);
+
+    startSocialConnect($this->workspace, Platform::InstagramFacebook, $account)->offer([
+        PendingConnection::identity(Platform::InstagramFacebook, 'ig-pro-1', 'My Biz', 'mybiz', null, 'profile', [
+            'username' => 'mybiz',
+            'display_name' => 'My Biz',
+            'access_token' => 'page-token',
+            'scopes' => ['instagram_content_publish'],
+            'meta' => ['page_id' => 'page-1', 'page_name' => 'My Page'],
+        ]),
+    ]);
+
+    $this->actingAs($this->user);
+
+    finishSocialConnect(Platform::InstagramFacebook)->assertInertiaFlash('connectedChannel.created', false);
+
+    $account->refresh();
+
+    expect($this->workspace->socialAccounts()->count())->toBe(1)
+        ->and($account->platform)->toBe(Platform::InstagramFacebook)
+        ->and($account->platform_user_id)->toBe('ig-pro-1')
+        ->and($account->access_token)->toBe('page-token');
+});
+
+test('reconnecting through facebook still refuses another instagram account', function () {
+    $account = SocialAccount::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'platform' => Platform::Instagram,
+        'platform_user_id' => 'app-scoped-1',
+        'meta' => ['ig_user_id' => 'ig-pro-1'],
+    ]);
+
+    startSocialConnect($this->workspace, Platform::InstagramFacebook, $account)->offer([
+        PendingConnection::identity(Platform::InstagramFacebook, 'ig-pro-2', 'Other', 'other', null, 'profile', [
+            'username' => 'other',
+            'access_token' => 'page-token',
+            'scopes' => ['instagram_content_publish'],
+        ]),
+    ]);
+
+    $this->actingAs($this->user);
+    finishSocialConnect(Platform::InstagramFacebook);
+
+    expect($account->fresh()->platform)->toBe(Platform::Instagram)
+        ->and($account->fresh()->platform_user_id)->toBe('app-scoped-1');
+});

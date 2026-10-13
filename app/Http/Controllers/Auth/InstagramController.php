@@ -70,6 +70,7 @@ class InstagramController extends SocialController
                         'scopes' => $scopes,
                         'meta' => [
                             'account_type' => data_get($socialUser->user, 'account_type'),
+                            'ig_user_id' => filled(data_get($socialUser->user, 'user_id')) ? (string) data_get($socialUser->user, 'user_id') : null,
                         ],
                     ],
                 ),

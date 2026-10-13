@@ -540,6 +540,119 @@ test('the instagram card shows share to feed on reels, the AI label last and on 
     ]);
 });
 
+test('the instagram reel card adds collaborators and a checked trial reel, and asks to link Facebook for music', function () {
+    fakeChannelSettingsApis();
+    $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramReel);
+
+    $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
+    waitForChannelSettingsTestId($page, 'instagram-music-add');
+
+    $page->click('@instagram-music-add');
+    waitForChannelSettingsTestId($page, 'instagram-music-link-facebook');
+    $page->assertPresent('@instagram-music-save-and-link')
+        ->click('@instagram-music-maybe-later');
+    waitForChannelSettingsCondition($page, "!document.querySelector('[data-testid=\"instagram-music-link-facebook\"]')");
+
+    $page->type('@instagram-collaborator-input', '@alice')
+        ->keys('@instagram-collaborator-input', 'Enter');
+    waitForChannelSettingsTestId($page, 'instagram-collaborators-notice');
+    $page->assertPresent('@instagram-collaborator-alice')
+        ->assertPresent('@instagram-trial-reel-unavailable')
+        ->click('@instagram-collaborators-notice-dismiss');
+    waitForChannelSettingsCondition($page, "!document.querySelector('[data-testid=\"instagram-collaborators-notice\"]')");
+
+    $page->type('@instagram-collaborator-input', 'bob')
+        ->click('@instagram-collaborator-add');
+    waitForChannelSettingsTestId($page, 'instagram-collaborator-bob');
+
+    $page->click('@instagram-collaborator-remove-alice')
+        ->click('@instagram-collaborator-remove-bob');
+    waitForChannelSettingsTestId($page, 'instagram-trial-reel-MANUAL');
+    $page->click('@instagram-trial-reel-MANUAL');
+    waitForChannelSettingsTestId($page, 'instagram-trial-reel-check');
+    $page->click('@instagram-trial-reel-check-no');
+    waitForChannelSettingsCondition($page, "!document.querySelector('[data-testid=\"instagram-trial-reel-check\"]')");
+    $page->assertAttribute('@instagram-trial-reel-off', 'aria-checked', 'true')
+        ->click('@instagram-trial-reel-MANUAL');
+    waitForChannelSettingsTestId($page, 'instagram-trial-reel-check');
+    $page->click('@instagram-trial-reel-check-yes');
+    waitForChannelSettingsCondition($page, "document.querySelector('[data-testid=\"instagram-trial-reel-MANUAL\"]')?.getAttribute('aria-checked') === 'true'");
+    $page->assertNoJavaScriptErrors();
+
+    $page->click('@composer-save-draft')->assertMissing('@post-composer-dialog');
+
+    expect(data_get($post->fresh()->meta, 'trial_graduation'))->toBe('MANUAL')
+        ->and(data_get($post->fresh()->meta, 'collaborators'))->toBe([]);
+});
+
+test('save and link saves the reel as a draft and opens the Facebook requirements to reconnect the account', function () {
+    fakeChannelSettingsApis();
+    $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramReel);
+    $post->update(['status' => Status::Scheduled, 'scheduled_at' => now()->addDay()]);
+
+    $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
+    waitForChannelSettingsTestId($page, 'instagram-music-add');
+
+    $page->click('@instagram-music-add');
+    waitForChannelSettingsTestId($page, 'instagram-music-save-and-link');
+    $page->click('@instagram-music-save-and-link');
+    waitForChannelSettingsTestId($page, 'instagram-facebook-requirements');
+
+    $page->assertMissing('@post-composer-dialog')
+        ->assertPresent('@instagram-facebook-requirements-connect')
+        ->assertNoJavaScriptErrors();
+    expect($post->fresh()->status)->toBe(Status::Draft);
+});
+
+test('the instagram reel card picks music for an account connected through Facebook', function () {
+    Http::fake([config('trypost.platforms.instagram-facebook.graph_api').'/ig_audio*' => Http::response(['audio' => [[
+        'audio_id' => 'audio-1',
+        'title' => 'Summer Song',
+        'display_artist' => 'The Band',
+        'cover_artwork_thumbnail_uri' => null,
+        'download_url' => null,
+    ]]])]);
+    fakeChannelSettingsApis();
+    $post = seedChannelSettingsPost(Platform::InstagramFacebook, ContentType::InstagramReel);
+
+    $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
+    waitForChannelSettingsTestId($page, 'instagram-music-add');
+
+    $page->click('@instagram-music-add');
+    waitForChannelSettingsTestId($page, 'instagram-music-track-audio-1');
+    $page->click('@instagram-music-track-audio-1');
+    waitForChannelSettingsTestId($page, 'instagram-music-selected');
+    $page->assertSeeIn('@instagram-music-selected', 'Summer Song')
+        ->assertSeeIn('@instagram-preview-audio', 'Summer Song')
+        ->assertPresent('@instagram-music-part-hint')
+        ->assertNoJavaScriptErrors();
+
+    $page->click('@instagram-music-volume');
+    waitForChannelSettingsTestId($page, 'instagram-music-video_volume');
+    $page->script(<<<'JS'
+        (() => {
+            const slider = document.querySelector('[data-testid="instagram-music-video_volume"]');
+            slider.value = '30';
+            slider.dispatchEvent(new Event('input', { bubbles: true }));
+        })()
+    JS);
+    waitForChannelSettingsCondition($page, "document.querySelector('[data-testid=\"instagram-music-volume-panel\"]')?.textContent.includes('30%')");
+    $page->assertSeeIn('@instagram-music-volume-panel', '30%')
+        ->keys('@instagram-music-video_volume', 'Escape');
+    waitForChannelSettingsCondition($page, "!document.querySelector('[data-testid=\"instagram-music-volume-panel\"]')");
+
+    $page->click('@composer-save-draft')->assertMissing('@post-composer-dialog');
+
+    expect(data_get($post->fresh()->meta, 'audio'))->toEqual([
+        'id' => 'audio-1',
+        'title' => 'Summer Song',
+        'artist' => 'The Band',
+        'cover_url' => null,
+        'preview_url' => null,
+        'video_volume' => 30,
+    ]);
+});
+
 test('the instagram card counts hashtags down to five and warns past the limit', function () {
     fakeChannelSettingsApis();
     $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramFeed);

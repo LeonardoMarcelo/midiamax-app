@@ -6,6 +6,7 @@ namespace App\Support;
 
 use App\Enums\GoogleBusiness\CtaAction;
 use App\Enums\GoogleBusiness\TopicType;
+use App\Enums\Instagram\TrialGraduation;
 use App\Enums\SocialAccount\Platform;
 use App\Enums\TikTok\PrivacyLevel;
 use App\Enums\YouTube\Category;
@@ -35,6 +36,12 @@ class PostPlatformMetaRules
      */
     public const SYSTEM_KEYS = ['reactions'];
 
+    /** Instagram takes up to three collaborators on a feed post, carousel or reel. */
+    public const INSTAGRAM_MAX_COLLABORATORS = 3;
+
+    /** An Instagram username, with or without its leading @. */
+    public const INSTAGRAM_USERNAME_PATTERN = '/^@?[A-Za-z0-9._]{1,30}$/';
+
     /**
      * Validation rules for the post's meta and all its per-platform sub-keys,
      * under `$prefix` (`meta`, or `destinations.*.meta` for a list of channels).
@@ -48,6 +55,17 @@ class PostPlatformMetaRules
             "{$prefix}" => ['sometimes', 'nullable', 'array'],
 
             "{$prefix}.share_to_feed" => ['sometimes', 'boolean'],
+            "{$prefix}.collaborators" => ['sometimes', 'nullable', 'array', 'max:'.self::INSTAGRAM_MAX_COLLABORATORS],
+            "{$prefix}.collaborators.*" => ['string', 'regex:'.self::INSTAGRAM_USERNAME_PATTERN],
+            "{$prefix}.trial_graduation" => ['sometimes', 'nullable', 'string', Rule::enum(TrialGraduation::class)],
+            "{$prefix}.audio" => ['sometimes', 'nullable', 'array'],
+            "{$prefix}.audio.id" => ["required_with:{$prefix}.audio", 'string', 'max:64'],
+            "{$prefix}.audio.title" => ['sometimes', 'nullable', 'string', 'max:255'],
+            "{$prefix}.audio.artist" => ['sometimes', 'nullable', 'string', 'max:255'],
+            "{$prefix}.audio.cover_url" => ['sometimes', 'nullable', 'url:http,https', 'max:2048'],
+            "{$prefix}.audio.preview_url" => ['sometimes', 'nullable', 'url:http,https', 'max:4096'],
+            "{$prefix}.audio.audio_volume" => ['sometimes', 'nullable', 'integer', 'between:0,100'],
+            "{$prefix}.audio.video_volume" => ['sometimes', 'nullable', 'integer', 'between:0,100'],
 
             "{$prefix}.spoiler_text" => ['sometimes', 'nullable', 'string', 'max:500'],
 
@@ -175,6 +193,8 @@ class PostPlatformMetaRules
             "{$prefix}.link.url" => __('posts.form.pinterest.link_invalid'),
             "{$prefix}.link.max" => __('posts.form.pinterest.link_max'),
             "{$prefix}.title.max" => __('posts.form.pinterest.title_max'),
+            "{$prefix}.collaborators.max" => __('posts.form.instagram.collaborators.max', ['max' => self::INSTAGRAM_MAX_COLLABORATORS]),
+            "{$prefix}.collaborators.*.regex" => __('posts.form.instagram.collaborators.invalid'),
             "{$prefix}.event.end_date.after_or_equal" => __('posts.form.google_business.event_end_date_before_start'),
             "{$prefix}.event.title.max" => __('posts.form.google_business.title_max'),
         ];
@@ -209,7 +229,7 @@ class PostPlatformMetaRules
             'Pinterest: board_id (required to publish — call list-pinterest-boards-tool first, or create-pinterest-board-tool), title (≤100), link (destination URL). Pin description comes from the post content; a video pin cover frame is the media item meta.cover_offset_ms.',
             'Discord: channel_id (required to publish — call list-discord-channels-tool first), channel_name (the channel name shown in the app), mentions ([{token,label}], e.g. {token: "@everyone"} or {token: "<@&roleId>"}), embeds (up to 10 [{title ≤256, description ≤4096, url, image (URL), color (#RRGGBB)}]).',
             'YouTube Shorts: title (≤100, no < or >; omitted, it is derived from the first non-empty line of the content with < and > removed, cut to 100 characters), description (plain text, at most 5000 bytes; omit or null to use the content), category_id (YouTube category id: '.collect(Category::cases())->map(fn (Category $category): string => "{$category->value}=".__($category->labelKey(), [], 'en'))->implode(', ').'; default '.Category::DEFAULT->value.'), privacy_status (public|unlisted|private, default public), license (youtube|creativeCommon), notify_subscribers (default true), embeddable (default true), made_for_kids (default false), is_ai_generated (discloses altered or synthetic content).',
-            'Instagram: is_ai_generated (feed, reels, stories, carousels), share_to_feed (instagram_reel only, default true). An instagram_feed post with a single video publishes as a Reel. People tags are the media item meta.user_tags and a video cover frame is meta.cover_offset_ms.',
+            'Instagram: is_ai_generated (feed, reels, stories, carousels), share_to_feed (instagram_reel only, default true), collaborators (up to '.self::INSTAGRAM_MAX_COLLABORATORS.' Instagram usernames invited as co-authors; feed, reels and carousels, not stories), trial_graduation (instagram_reel only: MANUAL|SS_PERFORMANCE publishes a trial reel shown only to non-followers, graduated by hand in the app or by Instagram when it performs well; not with collaborators, and only on accounts where Instagram offers trial reels), audio (instagram_reel only, Instagram connected through Facebook: {id} of an Instagram audio track, with optional title and artist, and audio_volume and video_volume from 0 to 100, default 100). An instagram_feed post with a single video publishes as a Reel. People tags are the media item meta.user_tags and a video cover frame is meta.cover_offset_ms.',
             'X: is_ai_generated (sent as made_with_ai, discloses AI-generated media on the post).',
             'Threads: topic_tag (1-50 characters after a leading # is dropped, no . or &). Use content_type threads_ghost_post for a text-only post archived after 24 hours (no media, no topic).',
             'Facebook, Bluesky, LinkedIn: link_preview (default true; false publishes a text post with a link without its preview card).',
@@ -286,7 +306,27 @@ class PostPlatformMetaRules
             $meta['thread_replies'] = ThreadReplies::of($meta);
         }
 
+        if (is_array(data_get($meta, 'collaborators'))) {
+            $meta['collaborators'] = self::instagramCollaborators($meta['collaborators']);
+        }
+
         return $meta;
+    }
+
+    /**
+     * Instagram usernames as the API takes them: without the @, each once.
+     *
+     * @param  array<int, mixed>  $collaborators
+     * @return list<string>
+     */
+    public static function instagramCollaborators(array $collaborators): array
+    {
+        return collect($collaborators)
+            ->map(fn (mixed $username): string => ltrim(Str::trim((string) $username), '@'))
+            ->filter()
+            ->unique(fn (string $username): string => Str::lower($username))
+            ->values()
+            ->all();
     }
 
     /**
@@ -340,6 +380,11 @@ class PostPlatformMetaRules
         return match (true) {
             $platform === Platform::YouTube => self::youtubeDescriptionViolation($meta) ?? self::formatViolation($platform, $meta),
             $platform === Platform::TikTok => self::tiktokPrivacyViolation($meta),
+            $platform === Platform::Instagram
+                && filled(data_get($meta, 'audio.id')) => ['audio', trans('posts.form.instagram.music.requires_facebook')],
+            in_array($platform, [Platform::Instagram, Platform::InstagramFacebook], true)
+                && filled(data_get($meta, 'trial_graduation'))
+                && filled(data_get($meta, 'collaborators')) => ['trial_graduation', trans('posts.form.instagram.trial_reel.no_collaborators')],
             $platform === Platform::Pinterest && blank(data_get($meta, 'board_id')) => ['board_id', trans('posts.form.pinterest.board_required')],
             $platform === Platform::Discord && blank(data_get($meta, 'channel_id')) => ['channel_id', trans('posts.form.discord.channel_required')],
             $needsGoogleBusinessEvent

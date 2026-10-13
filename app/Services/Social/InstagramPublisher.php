@@ -6,6 +6,7 @@ namespace App\Services\Social;
 
 use App\Dto\MediaItem;
 use App\Enums\Instagram\ContainerStatus;
+use App\Enums\Instagram\TrialGraduation;
 use App\Enums\PostPlatform\ContentType;
 use App\Enums\SocialAccount\Platform;
 use App\Exceptions\PlatformUnavailableException;
@@ -16,6 +17,7 @@ use App\Models\Post;
 use App\Services\Social\Concerns\FitsImageToCanvas;
 use App\Services\Social\Concerns\HasSocialHttpClient;
 use App\Services\Social\Meta\GraphError;
+use App\Support\PostPlatformMetaRules;
 use App\Support\Social\PublishCheckpoint;
 use Closure;
 use Illuminate\Http\Client\ConnectionException;
@@ -115,7 +117,7 @@ class InstagramPublisher
             $params['alt_text'] = $alt;
         }
 
-        $params = [...$params, ...$this->userTagsParam($media->userTags()), ...$this->sharedOptions()];
+        $params = [...$params, ...$this->userTagsParam($media->userTags()), ...$this->sharedOptions(), ...$this->collaboratorsParam()];
 
         $containerId = $this->createContainer($instagramId, $params, 'container');
 
@@ -131,6 +133,7 @@ class InstagramPublisher
             'access_token' => $accessToken,
             ...$this->thumbOffsetParam($media),
             ...$this->sharedOptions(),
+            ...$this->collaboratorsParam(),
             ...$this->reelOptions(),
         ], 'reel container');
 
@@ -265,9 +268,35 @@ class InstagramPublisher
             return [];
         }
 
-        return [
+        $trialGraduation = TrialGraduation::tryFrom((string) data_get($this->post->meta, 'trial_graduation'));
+        $audioId = data_get($this->post->meta, 'audio.id');
+
+        return array_filter([
             'share_to_feed' => data_get($this->post->meta, 'share_to_feed', true) ? 'true' : 'false',
-        ];
+            'trial_params' => $trialGraduation === null
+                ? null
+                : (string) json_encode(['graduation_strategy' => $trialGraduation->value]),
+            'audio_configuration' => filled($audioId) && $this->post->socialAccount?->platform === Platform::InstagramFacebook
+                ? (string) json_encode(array_filter([
+                    'audio_id' => (string) $audioId,
+                    'audio_volume' => data_get($this->post->meta, 'audio.audio_volume'),
+                    'video_volume' => data_get($this->post->meta, 'audio.video_volume'),
+                ], fn (mixed $value): bool => $value !== null))
+                : null,
+        ], fn (?string $value): bool => $value !== null);
+    }
+
+    /**
+     * Instagram reads `collaborators` as a JSON array of usernames. Stories and
+     * carousel children take none.
+     *
+     * @return array{collaborators?: string}
+     */
+    private function collaboratorsParam(): array
+    {
+        $collaborators = PostPlatformMetaRules::instagramCollaborators((array) data_get($this->post->meta, 'collaborators', []));
+
+        return $collaborators === [] ? [] : ['collaborators' => (string) json_encode($collaborators)];
     }
 
     /**
@@ -302,6 +331,7 @@ class InstagramPublisher
             'children' => implode(',', $childContainers),
             'access_token' => $accessToken,
             ...$this->sharedOptions(),
+            ...$this->collaboratorsParam(),
         ], 'carousel container');
 
         return $this->finishContainer($instagramId, $accessToken, $carouselId);

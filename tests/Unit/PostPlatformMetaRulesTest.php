@@ -9,11 +9,13 @@ use App\Rules\ContentFitsPlatformLimits;
 use App\Support\PostPlatformMetaRules;
 use Illuminate\Support\Facades\Validator;
 
-test('custom meta messages only cover pinterest title and link', function () {
+test('custom meta messages cover pinterest, instagram collaborators and google business', function () {
     expect(PostPlatformMetaRules::messages())->toBe([
         'meta.link.url' => __('posts.form.pinterest.link_invalid'),
         'meta.link.max' => __('posts.form.pinterest.link_max'),
         'meta.title.max' => __('posts.form.pinterest.title_max'),
+        'meta.collaborators.max' => __('posts.form.instagram.collaborators.max', ['max' => PostPlatformMetaRules::INSTAGRAM_MAX_COLLABORATORS]),
+        'meta.collaborators.*.regex' => __('posts.form.instagram.collaborators.invalid'),
         'meta.event.end_date.after_or_equal' => __('posts.form.google_business.event_end_date_before_start'),
         'meta.event.title.max' => __('posts.form.google_business.title_max'),
     ]);

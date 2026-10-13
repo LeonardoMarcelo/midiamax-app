@@ -4,18 +4,24 @@ import {
     IconBrandInstagram,
     IconDots,
     IconDotsVertical,
+    IconFlask,
     IconHeart,
     IconMessageCircle,
+    IconMusic,
     IconRepeat,
     IconSend,
 } from '@tabler/icons-vue';
-import { computed } from 'vue';
+import { computed, provide } from 'vue';
 
 import PostMediaPreview from '@/components/posts/previews/PostMediaPreview.vue';
 import PreviewAvatar from '@/components/posts/previews/PreviewAvatar.vue';
 import PreviewStoryHeader from '@/components/posts/previews/PreviewStoryHeader.vue';
 import PreviewText from '@/components/posts/previews/PreviewText.vue';
 import PreviewVerticalCard from '@/components/posts/previews/PreviewVerticalCard.vue';
+import {
+    PREVIEW_SOUNDTRACK,
+    useReelSoundtrack,
+} from '@/composables/useReelSoundtrack';
 import { ContentType } from '@/types/content-type';
 
 import type { PreviewProps } from './types';
@@ -26,6 +32,30 @@ const feedAspectPadding = computed((): number => {
     const { width = 0, height = 0 } = props.media[0]?.meta ?? {};
 
     return width > 0 && height > 0 ? (height / width) * 100 : 100;
+});
+
+const audioLabel = computed((): string | null => {
+    const audio = props.meta?.audio;
+
+    if (!audio?.id) {
+        return null;
+    }
+
+    return [audio.title, audio.artist].filter(Boolean).join(' · ') || null;
+});
+
+const isTrialReel = computed(() => Boolean(props.meta?.trial_graduation));
+
+const soundtrack = useReelSoundtrack();
+
+provide(PREVIEW_SOUNDTRACK, {
+    playing: computed(
+        () =>
+            Boolean(props.meta?.audio?.id) &&
+            soundtrack.playingAudioId.value === props.meta?.audio?.id,
+    ),
+    videoVolume: computed(() => (props.meta?.audio?.video_volume ?? 100) / 100),
+    stop: soundtrack.stop,
 });
 
 const CAPTION_LIMIT = 100;
@@ -50,6 +80,16 @@ const caption = computed((): string =>
             { icon: IconDots },
         ]"
     >
+        <template #top>
+            <span
+                v-if="isTrialReel"
+                class="absolute top-3 left-3 inline-flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs font-medium"
+                data-testid="instagram-preview-trial"
+            >
+                <IconFlask class="size-3.5" />
+                {{ $t('posts.form.instagram.trial_reel.badge') }}
+            </span>
+        </template>
         <template #footer>
             <div
                 class="flex items-center gap-2 font-semibold"
@@ -59,6 +99,14 @@ const caption = computed((): string =>
                 <span class="truncate">{{ socialAccount.handle_label }}</span>
             </div>
             <p v-if="content" class="truncate">{{ content }}</p>
+            <p
+                v-if="audioLabel"
+                class="flex items-center gap-1 truncate text-xs"
+                data-testid="instagram-preview-audio"
+            >
+                <IconMusic class="size-3.5 shrink-0" />
+                <span class="truncate">{{ audioLabel }}</span>
+            </p>
         </template>
         <template #corner>
             <PreviewAvatar

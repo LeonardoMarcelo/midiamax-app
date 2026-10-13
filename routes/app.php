@@ -18,6 +18,7 @@ use App\Http\Controllers\App\IdeaController;
 use App\Http\Controllers\App\IdeaGenerateController;
 use App\Http\Controllers\App\IdeaStageController;
 use App\Http\Controllers\App\InsightsController;
+use App\Http\Controllers\App\InstagramAudioController;
 use App\Http\Controllers\App\LibraryTemplateController;
 use App\Http\Controllers\App\LinkPreviewController;
 use App\Http\Controllers\App\LinkPreviewMediaController;
@@ -178,6 +179,10 @@ Route::middleware(['auth', EnsureAccountReady::class, EnsureHasWorkspace::class]
     Route::get('discord/accounts/{account}/mentions', [AppDiscordController::class, 'mentions'])
         ->middleware('throttle:60,1')
         ->name('app.discord.mentions');
+
+    Route::get('instagram/accounts/{account}/audio', [InstagramAudioController::class, 'index'])
+        ->middleware('throttle:60,1')
+        ->name('app.instagram.audio.index');
 
     Route::get('pinterest/accounts/{account}/boards', [PinterestBoardController::class, 'index'])
         ->middleware('throttle:30,1')
