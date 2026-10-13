@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\GoogleBusiness\TopicType;
+use App\Enums\PostPlatform\ContentType;
 use App\Enums\SocialAccount\Platform;
 use App\Enums\TikTok\PrivacyLevel;
 use App\Rules\ContentFitsPlatformLimits;
@@ -455,4 +456,14 @@ test('the documentation describes the youtube title as the first line of the con
     expect(PostPlatformMetaRules::documentation())
         ->toContain('derived from the first non-empty line of the content')
         ->not->toContain('first sentence');
+});
+
+test('instagram music and trial reel rules apply only to reels', function () {
+    $trialWithCollaborators = ['collaborators' => ['alice'], 'trial_graduation' => 'MANUAL'];
+    $music = ['audio' => ['id' => 'audio-1']];
+
+    expect(PostPlatformMetaRules::requiredMetaViolation(Platform::InstagramFacebook, $trialWithCollaborators, ContentType::InstagramReel)[0] ?? null)->toBe('trial_graduation')
+        ->and(PostPlatformMetaRules::requiredMetaViolation(Platform::Instagram, $music, 'instagram_reel')[0] ?? null)->toBe('audio')
+        ->and(PostPlatformMetaRules::requiredMetaViolation(Platform::InstagramFacebook, $trialWithCollaborators, ContentType::InstagramFeed))->toBeNull()
+        ->and(PostPlatformMetaRules::requiredMetaViolation(Platform::Instagram, $music, ContentType::InstagramStory))->toBeNull();
 });

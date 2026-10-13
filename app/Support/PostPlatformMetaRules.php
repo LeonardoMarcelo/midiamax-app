@@ -7,6 +7,7 @@ namespace App\Support;
 use App\Enums\GoogleBusiness\CtaAction;
 use App\Enums\GoogleBusiness\TopicType;
 use App\Enums\Instagram\TrialGraduation;
+use App\Enums\PostPlatform\ContentType;
 use App\Enums\SocialAccount\Platform;
 use App\Enums\TikTok\PrivacyLevel;
 use App\Enums\YouTube\Category;
@@ -244,9 +245,9 @@ class PostPlatformMetaRules
      * Adds the validation error for meta that becomes mandatory once a post is
      * published or scheduled (TikTok privacy, Pinterest board, Discord channel).
      */
-    public static function addRequiredOnPublishErrors(Validator $validator, Platform|SocialAccount|null $target, mixed $meta, string $prefix = 'meta'): void
+    public static function addRequiredOnPublishErrors(Validator $validator, Platform|SocialAccount|null $target, mixed $meta, string $prefix = 'meta', ContentType|string|null $contentType = null): void
     {
-        $violation = self::requiredMetaViolation($target, $meta);
+        $violation = self::requiredMetaViolation($target, $meta, $contentType);
 
         if (blank($violation)) {
             return;
@@ -274,7 +275,7 @@ class PostPlatformMetaRules
             return;
         }
 
-        $violation = self::requiredMetaViolation($post->socialAccount ?? $post->platform, $post->meta)
+        $violation = self::requiredMetaViolation($post->socialAccount ?? $post->platform, $post->meta, $post->content_type)
             ?? self::contentMetaViolation($post->platform, $post->meta, (string) $post->content);
 
         if (filled($violation)) {
@@ -361,12 +362,15 @@ class PostPlatformMetaRules
     /**
      * The missing required meta field for a platform about to publish, or null when
      * nothing is missing. Single source of "what each platform requires to publish".
+     * Instagram music and trial reels only exist on reels, so their rules apply
+     * only when `$contentType` is a reel.
      *
      * @return array{0: string, 1: string}|null [field, message]
      */
-    public static function requiredMetaViolation(Platform|SocialAccount|null $target, mixed $meta): ?array
+    public static function requiredMetaViolation(Platform|SocialAccount|null $target, mixed $meta, ContentType|string|null $contentType = null): ?array
     {
         $platform = $target instanceof SocialAccount ? $target->platform : $target;
+        $isInstagramReel = (is_string($contentType) ? ContentType::tryFrom($contentType) : $contentType) === ContentType::InstagramReel;
         $threadViolation = ThreadReplies::violation($target, $meta);
 
         if ($threadViolation !== null) {
@@ -380,9 +384,11 @@ class PostPlatformMetaRules
         return match (true) {
             $platform === Platform::YouTube => self::youtubeDescriptionViolation($meta) ?? self::formatViolation($platform, $meta),
             $platform === Platform::TikTok => self::tiktokPrivacyViolation($meta),
-            $platform === Platform::Instagram
+            $isInstagramReel
+                && $platform === Platform::Instagram
                 && filled(data_get($meta, 'audio.id')) => ['audio', trans('posts.form.instagram.music.requires_facebook')],
-            in_array($platform, [Platform::Instagram, Platform::InstagramFacebook], true)
+            $isInstagramReel
+                && in_array($platform, [Platform::Instagram, Platform::InstagramFacebook], true)
                 && filled(data_get($meta, 'trial_graduation'))
                 && filled(data_get($meta, 'collaborators')) => ['trial_graduation', trans('posts.form.instagram.trial_reel.no_collaborators')],
             $platform === Platform::Pinterest && blank(data_get($meta, 'board_id')) => ['board_id', trans('posts.form.pinterest.board_required')],

@@ -1332,3 +1332,27 @@ it('rejects publishing instagram music without Facebook and a trial reel with co
     'music on instagram login' => [Platform::Instagram, ['audio' => ['id' => 'audio-1']], 'meta.audio'],
     'trial with collaborators' => [Platform::InstagramFacebook, ['collaborators' => ['alice'], 'trial_graduation' => 'MANUAL'], 'meta.trial_graduation'],
 ]);
+
+it('ignores instagram reel-only meta on a feed post', function (Platform $platform, array $meta) {
+    $instagram = SocialAccount::factory()->create(['workspace_id' => $this->workspace->id, 'platform' => $platform]);
+    $post = Post::factory()->forAccount($instagram, ContentType::InstagramFeed)->create([
+        'user_id' => $this->user->id,
+        'content' => 'Feed post',
+        'status' => PostStatus::Draft,
+        'media' => [[
+            'id' => 'image-1', 'type' => 'image', 'path' => 'medias/photo.jpg', 'url' => 'https://example.com/photo.jpg',
+            'mime_type' => 'image/jpeg', 'original_filename' => 'photo.jpg',
+        ]],
+        'meta' => $meta,
+    ]);
+
+    $this->withHeaders($this->headers)
+        ->putJson(route('api.posts.update', $post), [
+            'status' => PostStatus::Scheduled->value,
+            'scheduled_at' => now()->addDay()->toIso8601String(),
+        ])
+        ->assertJsonMissingValidationErrors(['meta.audio', 'meta.trial_graduation']);
+})->with([
+    'music on instagram login' => [Platform::Instagram, ['audio' => ['id' => 'audio-1']]],
+    'trial with collaborators' => [Platform::InstagramFacebook, ['collaborators' => ['alice'], 'trial_graduation' => 'MANUAL']],
+]);
