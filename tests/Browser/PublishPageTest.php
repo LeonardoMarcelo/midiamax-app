@@ -162,7 +162,8 @@ test('add to queue explains how to set up the queue when the channel has no post
         ->click("@post-add-to-queue-{$draft->id}");
     waitForPublishPageTestId($page, "post-queue-setup-{$draft->id}");
 
-    $page->assertSeeIn("@post-queue-setup-{$draft->id}", __('posts.publish.actions.queue_setup.title'))
+    $page->assertVisible("@post-queue-setup-illustration-{$draft->id}")
+        ->assertSeeIn("@post-queue-setup-{$draft->id}", __('posts.publish.actions.queue_setup.title'))
         ->assertSeeIn("@post-queue-setup-{$draft->id}", __('posts.publish.actions.queue_setup.body'))
         ->assertNoJavaScriptErrors();
     expect($draft->refresh()->status)->toBe(PostStatus::Draft);
