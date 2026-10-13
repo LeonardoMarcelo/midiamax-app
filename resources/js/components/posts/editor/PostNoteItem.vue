@@ -85,11 +85,11 @@ const handleEditKeydown = (event: KeyboardEvent) => {
 <template>
     <div
         :data-note-id="note.id"
-        class="group/note relative flex gap-3 rounded-lg px-2.5 py-2.5 transition-colors"
+        class="group/note relative flex gap-3 px-4 py-3 transition-colors"
         :class="
             highlighted
-                ? 'bg-primary-subtle ring-2 ring-primary-strong'
-                : 'hover:bg-muted/60 has-[[data-state=open]]:bg-muted/60'
+                ? 'bg-primary-subtle'
+                : 'hover:bg-muted/40 has-[[data-state=open]]:bg-muted/40'
         "
         data-testid="note-item"
     >
@@ -103,7 +103,7 @@ const handleEditKeydown = (event: KeyboardEvent) => {
         <div class="min-w-0 flex-1">
             <div class="flex min-h-5 items-center gap-1.5">
                 <span
-                    class="truncate text-sm font-semibold text-foreground"
+                    class="truncate text-sm font-medium text-foreground"
                     data-testid="note-author"
                     >{{ note.user.name }}</span
                 >
@@ -192,7 +192,7 @@ const handleEditKeydown = (event: KeyboardEvent) => {
             <NoteBody
                 v-else
                 :body="note.body"
-                class="mt-0.5 leading-relaxed text-foreground"
+                class="mt-1 leading-relaxed text-foreground"
             />
         </div>
     </div>

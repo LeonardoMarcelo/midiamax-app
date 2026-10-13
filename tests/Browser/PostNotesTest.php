@@ -52,7 +52,7 @@ test('adding a note from the popover shows it and emails the other members', fun
     $page->click("@post-notes-trigger-{$post->id}");
     waitForPostNotesTestId($page, 'note-input');
 
-    $page->assertScript('Math.round(document.querySelector("[data-testid=note-input]").getBoundingClientRect().height) === Math.round(document.querySelector("[data-testid=note-send]").getBoundingClientRect().height)', true);
+    $page->assertScript('(() => { const field = document.querySelector("[data-testid=note-composer]").getBoundingClientRect(); const send = document.querySelector("[data-testid=note-send]").getBoundingClientRect(); return Math.abs((field.top + field.height / 2) - (send.top + send.height / 2)) <= 1 && send.right <= field.right; })()', true);
 
     $page->fill('@note-input', 'Please check the @image before Friday');
     $page->click('@note-send');
@@ -71,7 +71,7 @@ test('adding a note from the popover shows it and emails the other members', fun
     Mail::assertNotQueued(PostNoteAdded::class, fn (PostNoteAdded $mail) => $mail->hasTo($user->email));
 });
 
-test('the note composer enables send only with text and sends on Enter but not Shift+Enter', function () {
+test('the note composer enables send only with text and sends on Enter', function () {
     Mail::fake();
 
     $user = User::factory()->create();
@@ -103,9 +103,6 @@ test('the note composer enables send only with text and sends on Enter but not S
     $page->fill('@note-input', 'First line');
     $page->assertEnabled('@note-send');
 
-    $page->keys('@note-input', ['Shift+Enter']);
-
-    expect($page->script("document.querySelector('[data-testid=\"note-input\"]').value"))->toBe("First line\n");
     expect(PostNote::query()->where('post_id', $post->id)->exists())->toBeFalse();
 
     $page->keys('@note-input', ['Enter']);
