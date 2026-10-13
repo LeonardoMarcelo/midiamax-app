@@ -1,12 +1,15 @@
-# 08 — Todas as credenciais para ir ao ar em produção
+# 08 — Credenciais do `.env` para produção
 
-Checklist completa. Cada item traz **onde conseguir**, **o que colar** e se é
-obrigatório. Tudo vai para o `.env` do repo **`midiamax-infra`** (privado), que
-o `compose.prod.yaml` carrega via `env_file`.
+Toda variável de ambiente que o sistema lê, o que cada uma **liga no produto**,
+onde conseguir e o que já está pronto.
 
-> **Este arquivo é público** (o repo é público por obrigação da AGPL §13).
-> Nenhum valor real nosso entra aqui — só o caminho para obter cada um. Os
-> valores já descobertos ficam em `CREDENCIAIS.md` no repo privado.
+Tudo vai para o `.env` do repo **`midiamax-infra`** (privado), carregado pelo
+`compose.prod.yaml` via `env_file`. Em produção não existe `.env` dentro do
+container — as variáveis chegam como ambiente de verdade.
+
+> Repo público: nenhum valor real aqui. Os gerados ficam em
+> `midiamax-infra/.env.gerado` e o detalhe por conta em `CREDENCIAIS.md`,
+> ambos no repo privado.
 
 Legenda: 🔴 sem isso não sobe · 🟡 sem isso falta função · ⚪ opcional
 
@@ -14,75 +17,29 @@ Legenda: 🔴 sem isso não sobe · 🟡 sem isso falta função · ⚪ opcional
 
 ## Status em 13/10/2026
 
-Os valores gerados estão em `midiamax-infra/.env.gerado` (não versionado) e o
-detalhamento por conta em `CREDENCIAIS.md`, no repo privado.
+| | Bloco | Situação |
+| --- | --- | --- |
+| ✅ | 1 Aplicação | `APP_KEY` gerada |
+| ✅ | 2 Banco | senha gerada |
+| ✅ | 3 Redis/filas | valores fixos |
+| ✅ | 4 Reverb | chaves geradas e replicadas no GitHub |
+| ✅ | 5 Passport | par RSA 4096 gerado |
+| ❌ | 6 Mídia (R2) | bucket não criado |
+| ⚠️ | 7 E-mail | envia, mas remetente de teste só entrega para o dono da conta |
+| ✅ | 8 Stripe | chaves, preços mensais e anuais, webhook validado ponta a ponta |
+| ❌ | 9 Login social | desligado |
+| ⚠️ | 10 Redes sociais | Telegram ok · Discord sem bot token · Meta sem redirects · YouTube em projeto de terceiro · LinkedIn e Pinterest não criados |
+| ✅ | 11 IA | Gemini gerando em pt-BR |
+| ❌ | 12 Mídia no compositor | não configurado |
+| ⚠️ | 13 Observabilidade | falta allowlist do Horizon em produção |
+| ✅ | 14 URLs internas | páginas no ar |
+| ✅ | 15 Build args | as três configuradas |
 
-### ✅ Pronto
-
-| Bloco | O que foi feito |
-| --- | --- |
-| 1 · Aplicação | `APP_KEY` gerada |
-| 2 · Banco | `DB_PASSWORD` gerada |
-| 3 · Redis/filas | valores fixos, nada a obter |
-| 4 · Reverb | `REVERB_APP_KEY` e `REVERB_APP_SECRET` geradas |
-| 5 · Passport | par RSA 4096 gerado |
-| 8 · Stripe | chaves, produtos, preços **mensais e anuais**, rótulos alinhados, webhook criado e **assinatura validada (HTTP 200 ponta a ponta)** |
-| 9.1 · Telegram | bot criado, token configurado, webhook registrado e respondendo |
-| 9.8 · Flags | plataformas não usadas desligadas |
-| 10 · IA | Gemini gerando legenda em pt-BR |
-| 12 · Páginas legais | `/termos`, `/privacidade`, `/exclusao-de-dados` e `/codigo-fonte` no ar, com os dados do controlador |
-| 13 · GitHub | `vars.APP_NAME`, `vars.APP_DOMAIN` e `secrets.REVERB_APP_KEY` configurados |
-| — · Backup | `instalar-cron-backup.sh` e `verificar-backup.sh` prontos (instalar no servidor) |
-
-### ⚠️ Parcial — funciona, mas não serve para produção ainda
-
-| Bloco | O que falta |
-| --- | --- |
-| 7 · E-mail | Resend autentica e envia, mas o remetente é o de teste: **só entrega para o dono da conta**. Falta verificar um domínio e configurar SPF/DKIM |
-| 9.2 · Discord | client ID e secret configurados; falta o **bot token** (é ele que publica) e cadastrar o redirect no portal |
-| 9.5 · Meta | app criado e credenciais válidas; faltam os **três redirects**, as credenciais do produto Instagram, App Review e Verificação do Negócio |
-| 9.7 · YouTube | está usando um cliente OAuth de outro projeto Google — a tela de consentimento mostra o nome errado. Criar projeto dedicado, habilitar as duas APIs e **pedir aumento de quota** |
-
-### ❌ Pendente
-
-| Bloco | Item |
-| --- | --- |
-| 0 | **Domínio** e **VPS** — hoje tudo depende do túnel ngrok |
-| 6 | Bucket R2 e credenciais de storage |
-| 9.3 | App do LinkedIn |
-| 9.4 | App do Pinterest |
-| 11 | `HORIZON_ALLOWED_EMAILS` de produção e monitoramento externo de uptime |
-| 12 | E-mail de contato real e **revisão jurídica** dos textos |
-| — | Cópia dos backups **para fora** do servidor |
-| — | Enquadramento fiscal: o CNAE atual não cobre SaaS — falar com o contador **antes** do App Review |
-
-### Ordem sugerida
-
-1. Domínio + VPS (destrava quase tudo: HTTPS real, e-mail, redirects definitivos)
-2. `DISCORD_BOT_TOKEN` e redirects da Meta e do Discord — rápidos
-3. Verificar domínio no Resend
-4. R2
-5. Projeto Google dedicado + pedido de quota (demora, abrir cedo)
-6. LinkedIn e Pinterest
-7. Revisão jurídica e contador
-
----
-
-## 0. Antes das credenciais
-
-| Item                           | Onde                                                                                                                                       |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 🔴 Domínio                    | Registro.br, Cloudflare ou similar. Ex.:`midiamax.com.br`, app em `app.midiamax.com.br`                                                |
-| 🔴 VPS                         | Hetzner / DigitalOcean / Contabo. 4 vCPU, 8 GB, 80 GB SSD                                                                                  |
-| 🔴 DNS                         | registro`A` do subdomínio apontando para o IP da VPS, **antes** de subir o Caddy (ele precisa resolver para emitir o certificado) |
-| 🟡 CNPJ                        | já temos. Necessário para Verificação do Negócio na Meta                                                                              |
-| 🟡 Conta de e-mail do domínio | `suporte@` e `privacidade@`. App review da Meta testa esse contato                                                                     |
+Fora do `.env`: **domínio** e **VPS**, que destravam quase todo o resto.
 
 ---
 
 ## 1. Aplicação 🔴
-
-> **Status:** `APP_KEY` gerada. Falta `APP_URL`/`APP_DOMAIN` definitivos (depende do domínio).
 
 ```env
 APP_NAME=MidiaMax
@@ -99,7 +56,15 @@ TELESCOPE_ENABLED=false
 LOG_LEVEL=warning
 ```
 
-**`APP_KEY`** — gerar uma vez e **guardar no gerenciador de segredos**:
+| Variável | O que faz |
+| --- | --- |
+| `APP_URL` | base de **todas** as URLs geradas, inclusive os redirects de OAuth. Sem barra no fim |
+| `APP_DOMAIN` | domínio que o Caddy usa para emitir o certificado |
+| `SELF_HOSTED=false` | **liga o modo SaaS**: cadastro aberto e assinatura obrigatória. Com `true`, `/register` responde 404 e só entra quem tem convite |
+| `WEBHOOK_URL` | base dos webhooks de entrada (Telegram). Vazio usa `APP_URL` |
+| `APP_DEBUG` | `true` em produção expõe stack trace com credenciais |
+
+**`APP_KEY`** — gerar uma vez:
 
 ```bash
 docker compose -f compose.prod.yaml run --rm app php artisan key:generate --show
@@ -108,13 +73,9 @@ docker compose -f compose.prod.yaml run --rm app php artisan key:generate --show
 Perder essa chave = perder todo dado criptografado, incluindo os tokens das
 redes sociais dos clientes. Não há recuperação.
 
-`APP_DEBUG=true` em produção expõe stack trace com credenciais. Nunca.
-
 ---
 
 ## 2. Banco de dados 🔴
-
-> **Status:** senha gerada. ✅
 
 ```env
 DB_CONNECTION=pgsql
@@ -122,7 +83,7 @@ DB_HOST=pgsql
 DB_PORT=5432
 DB_DATABASE=midiamax
 DB_USERNAME=midiamax
-DB_PASSWORD=<senha forte que você inventa>
+DB_PASSWORD=
 ```
 
 Gerar: `openssl rand -base64 24`. O serviço `pgsql` do compose lê a mesma
@@ -130,9 +91,7 @@ variável — define uma vez só.
 
 ---
 
-## 3. Redis, filas, cache, sessão 🔴
-
-> **Status:** ✅ nada a obter.
+## 3. Redis, filas, cache e sessão 🔴
 
 ```env
 REDIS_HOST=redis
@@ -145,33 +104,36 @@ SESSION_LIFETIME=1440
 BROADCAST_CONNECTION=reverb
 ```
 
-Valores fixos — não precisa conseguir nada em lugar nenhum.
+Valores fixos. A fila é o que publica os posts agendados — sem Redis, nada sai
+no horário.
 
 ---
 
-## 4. Reverb / WebSocket 🔴
+## 4. Reverb — WebSocket 🔴
 
-> **Status:** chaves geradas e já replicadas no GitHub. Falta `REVERB_HOST` definitivo.
+Liga a atualização em tempo real do calendário.
 
 ```env
 REVERB_APP_ID=1001
-REVERB_APP_KEY=<openssl rand -hex 16>
-REVERB_APP_SECRET=<openssl rand -hex 16>
+REVERB_APP_KEY=
+REVERB_APP_SECRET=
 REVERB_HOST=app.midiamax.com.br
 REVERB_PORT=443
 REVERB_SCHEME=https
 ```
 
+Gerar as duas chaves com `openssl rand -hex 16`.
+
 **Pegadinha:** `REVERB_APP_KEY` é **compilada no bundle JS** no build da imagem.
-Ela tem que ser idêntica ao `secrets.REVERB_APP_KEY` configurado no GitHub
-(bloco 13). Se divergir, o websocket não conecta e **o servidor não loga erro
-nenhum** — só aparece no console do browser.
+Tem que ser idêntica ao `secrets.REVERB_APP_KEY` do GitHub (bloco 15). Se
+divergir, o websocket não conecta e **o servidor não loga erro nenhum** — só
+aparece no console do browser.
 
 ---
 
 ## 5. Passport — tokens de API e MCP 🔴
 
-> **Status:** par RSA 4096 gerado. ✅
+Liga o acesso via API e via MCP (integração com agentes de IA).
 
 ```bash
 openssl genrsa -out oauth-private.key 4096
@@ -183,19 +145,18 @@ PASSPORT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY----
 PASSPORT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
 ```
 
-Use `\n` literal nas quebras. **Obrigatório:** sem essas variáveis o Passport cai
-para arquivos em `storage/`, que não são persistidos pelos volumes — cada
-recriação de container gera chaves novas e invalida todo token de API/MCP dos
-seus clientes.
+`\n` literal nas quebras. Sem essas variáveis o Passport cai para arquivos em
+`storage/`, que **não são persistidos pelos volumes**: cada recriação de
+container gera chaves novas e derruba todo token de API/MCP dos clientes.
 
 ---
 
 ## 6. Armazenamento de mídia 🔴
 
-> **Status:** ❌ bucket não criado. Hoje a mídia cairia em disco local.
+Onde ficam as imagens e vídeos que o cliente envia.
 
-**Cloudflare R2** (recomendado — sem custo de egresso):
-https://dash.cloudflare.com → R2 → criar bucket → *Manage R2 API Tokens*
+**Cloudflare R2** — https://dash.cloudflare.com → R2 → criar bucket →
+*Manage R2 API Tokens*
 
 ```env
 FILESYSTEM_DISK=r2
@@ -204,57 +165,52 @@ R2_SECRET_ACCESS_KEY=
 R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
 R2_REGION=auto
 R2_BUCKET=midiamax
-R2_URL=https://<url-publica-do-bucket>
+R2_URL=
 ```
 
-`R2_URL` é a URL pública do bucket. **Sem ela a mídia não renderiza** — ative o
-acesso público ou um domínio customizado no bucket.
+`R2_URL` é a URL **pública** do bucket. Sem ela a mídia não renderiza — ative o
+acesso público ou um domínio customizado.
 
-Alternativas suportadas: `s3` (AWS), `spaces` (DigitalOcean), `local` (não
-escala e complica backup).
+Alternativas: `s3` (AWS), `spaces` (DigitalOcean), `local` (não escala e
+complica backup).
 
 ---
 
 ## 7. E-mail 🔴
 
-> **Status:** ⚠️ Resend autentica e envia, mas o remetente de teste só entrega
-> para o dono da conta. Verificar um domínio é o que falta.
+Liga verificação de e-mail, reset de senha e convite de equipe. O default da
+imagem é `log` — sem SMTP real, nada disso chega.
 
-Sem SMTP real, convite de equipe, verificação de e-mail e reset de senha **não
-chegam** — o default da imagem é `log`.
-
-**Resend** (https://resend.com → API Keys):
+**Resend** — https://resend.com → API Keys
 
 ```env
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.resend.com
 MAIL_PORT=587
 MAIL_USERNAME=resend
-MAIL_PASSWORD=<a API key re_...>
+MAIL_PASSWORD=
 MAIL_SCHEME=smtp
 MAIL_FROM_ADDRESS=nao-responda@midiamax.com.br
 MAIL_FROM_NAME=MidiaMax
 ```
 
-Duas armadilhas já encontradas na prática:
+`MAIL_PASSWORD` é a API key (`re_...`).
+
+Três coisas descobertas testando:
 
 1. **`MAIL_SCHEME=tls` não existe no Laravel** e derruba todo envio com
    *"The tls scheme is not supported"*. Use `smtp` (STARTTLS/587) ou `smtps`
    (TLS/465). O `compose.prod.yaml` do upstream traz `tls`, que está errado.
 2. **`MAIL_MAILER=resend` não funciona** — o mailer existe no `config/mail.php`
    mas o pacote `resend/resend-laravel` não está instalado. Vá por SMTP.
-
-**Verifique um domínio** em https://resend.com/domains e configure SPF e DKIM.
-Com o remetente de teste `onboarding@resend.dev` o Resend só entrega para o
-e-mail dono da conta, e sem SPF/DKIM o resto cai em spam.
+3. Com o remetente de teste `onboarding@resend.dev`, o Resend **só entrega para
+   o e-mail dono da conta**. Verifique um domínio em
+   https://resend.com/domains e configure SPF e DKIM, ou todo e-mail para
+   cliente é recusado.
 
 ---
 
-## 8. Stripe 🔴
-
-> **Status:** ✅ chaves, produtos, preços mensais e anuais, rótulos alinhados e
-> webhook com assinatura validada ponta a ponta. Ao trocar para o domínio
-> definitivo, **edite a URL do endpoint existente** — assim o `whsec_` é preservado.
+## 8. Stripe — assinaturas 🔴
 
 Obrigatório porque `SELF_HOSTED=false`.
 
@@ -265,17 +221,16 @@ STRIPE_KEY=pk_live_...
 STRIPE_SECRET=sk_live_...
 ```
 
-**Os nomes importam:** o Cashier lê `STRIPE_KEY` e `STRIPE_SECRET`. Se usar
+**Os nomes importam:** o Cashier lê `STRIPE_KEY` e `STRIPE_SECRET`. Com
 `STRIPE_PUBLISHABLE_KEY`/`STRIPE_SECRET_KEY` (convenção de outros stacks) elas
 são ignoradas em silêncio — parece configurado e não está.
 
-Use `pk_test_`/`sk_test_` em qualquer ambiente que não seja produção. Chave live
-em ambiente de teste gera cobrança real.
+Use `pk_test_`/`sk_test_` fora de produção. Chave live em ambiente de teste
+gera cobrança real.
 
-### 8.2 Produtos e preços
+### 8.2 Preços
 
-Dashboard → Produtos → criar um produto por plano, com preço **mensal** e
-**anual** em BRL. Copiar os `price_...`:
+Dashboard → Produtos → um produto por plano, com preço mensal e anual em BRL:
 
 ```env
 STRIPE_SOCIALS_MONTHLY=price_...
@@ -286,9 +241,9 @@ STRIPE_WORKSPACE_MONTHLY=
 STRIPE_WORKSPACE_YEARLY=
 ```
 
-(`workspace` é um plano legado, arquivado no seeder — pode ficar vazio.)
+(`workspace` é plano legado, arquivado no seeder — pode ficar vazio.)
 
-Depois de preencher, **rodar o seeder**, que é quem grava os price IDs nos planos:
+Depois de preencher, rodar o seeder, que é quem grava os IDs nos planos:
 
 ```bash
 docker compose -f compose.prod.yaml exec app php artisan db:seed --class=PlanSeeder --force
@@ -296,9 +251,9 @@ docker compose -f compose.prod.yaml exec app php artisan db:seed --class=PlanSee
 
 ### 8.3 O preço EXIBIDO é outra variável 🔴
 
-O valor que aparece na tela **não vem do Stripe** — o upstream cravou em
-`lang/<locale>/billing.php`. Nós sobrescrevemos por config. **Mostrar um valor e
-cobrar outro é problema de CDC**, então estes têm que bater com os preços reais:
+O valor na tela **não vem do Stripe**: o upstream cravou em
+`lang/<locale>/billing.php` e nós sobrescrevemos por config. Estes têm que bater
+com os preços reais, senão o cliente vê um valor e é cobrado outro:
 
 ```env
 MIDIAMAX_PRICE_SOCIALS_MONTHLY="R$ 129,99"
@@ -311,16 +266,19 @@ MIDIAMAX_PRICE_WORKSPACES_YEARLY_PER_MONTH="R$ 308,32"
 
 ### 8.4 Webhook 🔴
 
+É o que mantém o app em dia com o Stripe. Sem ele, cancelamento e falha de
+pagamento não chegam e o cliente continua usando.
+
 Dashboard → Developers → Webhooks → **Add endpoint**:
 
 ```
 https://app.midiamax.com.br/api/v1/webhooks/cobranca/stripe
 ```
 
-(ou `https://app.midiamax.com.br/stripe/webhook` — as duas valem, mesmo controller)
+(ou `.../stripe/webhook` — as duas valem, mesmo controller)
 
-**Eventos a habilitar** — os 3 primeiros são os que o app realmente processa, os
-4 seguintes o Cashier também trata:
+Eventos — os 3 primeiros são os que o app processa, os 4 seguintes o Cashier
+também trata:
 
 ```
 customer.subscription.created      ← essencial
@@ -332,57 +290,107 @@ invoice.payment_action_required    ← 3DS, comum em cartão brasileiro
 payment_method.automatically_updated
 ```
 
-Depois de criar, **Reveal** o signing secret:
-
 ```env
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
-**O `whsec_` é por endpoint.** Usar o de outro endpoint faz todo evento ser
-rejeitado com 403 — e aí você cancela uma assinatura no Stripe e o cliente
-continua usando o sistema. Trocou a URL do endpoint? Confira se o secret mudou.
+**O `whsec_` é por endpoint.** Usar o de outro faz todo evento ser rejeitado com
+403. Ao migrar para o domínio definitivo, **edite a URL do endpoint existente**
+em vez de criar outro — assim o secret é preservado.
+
+A tolerância de timestamp é de **300 segundos**: se o relógio da VPS estiver
+fora de sincronia, todo webhook é rejeitado. Garanta NTP ativo.
 
 ### 8.5 Trial
 
 ```env
-REQUIRE_CARD_FOR_TRIAL=true     # false = trial sem cartão (não precisa de Stripe)
+REQUIRE_CARD_FOR_TRIAL=true
 CASHIER_TRIAL_DAYS=8
 CASHIER_ALLOW_PROMOTION_CODES=false
-STRIPE_SOCIALS_FIRST_MONTH_COUPON_ID=       # opcional
-STRIPE_WORKSPACES_FIRST_MONTH_COUPON_ID=    # opcional
+STRIPE_SOCIALS_FIRST_MONTH_COUPON_ID=
+STRIPE_WORKSPACES_FIRST_MONTH_COUPON_ID=
 ```
+
+`REQUIRE_CARD_FOR_TRIAL=false` libera o app pelo trial **sem cartão** — é o que
+permite rodar sem Stripe nenhum em desenvolvimento.
 
 ---
 
-## 9. Redes sociais
+## 9. Login social 🟡
 
-Apps **seus**, nunca os do upstream. Padrão de redirect:
-`https://app.midiamax.com.br/accounts/<plataforma>/callback` — tem que ser
-idêntico ao cadastrado no portal (protocolo, subdomínio, sem barra final).
+Liga os botões "Entrar com Google" e "Entrar com GitHub" na tela de login.
 
-### 9.1 Telegram 🟡 — sem review, sai hoje
+**Os dois vêm desligados por padrão.** E a flag **não checa credencial**: ligar
+sem configurar o OAuth faz o botão aparecer e quebrar no clique.
+
+### Google
+
+Usa **o mesmo cliente OAuth do YouTube** (`GOOGLE_CLIENT_ID`/`SECRET` do bloco
+10.7), com um redirect diferente:
+
+```env
+GOOGLE_AUTH_ENABLED=true
+GOOGLE_AUTH_CALLBACK=https://app.midiamax.com.br/auth/google/callback
+```
+
+No Google Cloud Console, o cliente OAuth precisa ter **os dois** redirects
+cadastrados:
+
+```
+https://app.midiamax.com.br/auth/google/callback       ← login
+https://app.midiamax.com.br/accounts/youtube/callback  ← conectar canal
+```
+
+Para só login (sem YouTube), basta um projeto com a tela de consentimento
+preenchida — não precisa habilitar as APIs do YouTube nem pedir quota.
+
+### GitHub
+
+https://github.com/settings/developers → New OAuth App
+
+```env
+GITHUB_AUTH_ENABLED=false
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_AUTH_CALLBACK=https://app.midiamax.com.br/auth/github/callback
+```
+
+Para um produto voltado a pequenos negócios e agências, login com GitHub
+raramente faz sentido — deixe `false`.
+
+---
+
+## 10. Redes sociais 🟡
+
+Apps **seus**, nunca os do upstream. Redirect padrão:
+`https://app.midiamax.com.br/accounts/<plataforma>/callback`, idêntico ao
+cadastrado no portal (protocolo, subdomínio, sem barra final).
+
+### 10.1 Telegram — sai no mesmo dia
 
 https://t.me/BotFather → `/newbot`
 
 ```env
 TELEGRAM_ENABLED=true
-TELEGRAM_BOT_TOKEN=<token do BotFather>
-TELEGRAM_BOT_USERNAME=<username sem @>
-TELEGRAM_WEBHOOK_SECRET=<openssl rand -hex 32>
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_BOT_USERNAME=
+TELEGRAM_WEBHOOK_SECRET=
 ```
+
+`TELEGRAM_WEBHOOK_SECRET`: `openssl rand -hex 32`. Depois:
 
 ```bash
 docker compose -f compose.prod.yaml exec app php artisan telegram:set-webhook
 ```
 
-Um bot único compartilhado: cada cliente adiciona o seu bot ao canal dele.
+Um bot único compartilhado — cada cliente adiciona o seu bot ao canal dele.
 
-### 9.2 Discord 🟡 — sem review até 100 servidores
+### 10.2 Discord — sai no mesmo dia
 
 https://discord.com/developers/applications → New Application
 
-- **OAuth2** → Client ID, Client Secret, e adicionar o redirect
-- **Bot** → *Reset Token*, e ligar **Server Members Intent**
+- **OAuth2** → Client ID, Client Secret e cadastrar o redirect
+- **Bot** → *Reset Token* e ligar **Server Members Intent**
 
 ```env
 DISCORD_ENABLED=true
@@ -392,14 +400,14 @@ DISCORD_BOT_TOKEN=
 DISCORD_CLIENT_REDIRECT=https://app.midiamax.com.br/accounts/discord/callback
 ```
 
-A publicação usa o **bot token**, não o token OAuth do usuário. Escopos: `bot`,
-`identify`, `guilds`. Permissões: bitfield `248832`.
+**Quem publica é o `DISCORD_BOT_TOKEN`**, não o token OAuth do usuário — o OAuth
+só autoriza a entrada do bot no servidor do cliente. Escopos: `bot`, `identify`,
+`guilds`. Permissões: bitfield `248832`.
 
-### 9.3 LinkedIn 🟡 — self-service, rápido
+### 10.3 LinkedIn
 
-https://developer.linkedin.com → Create app (precisa de uma Página de empresa sua)
-
-Em *Products*, solicitar **Sign In with LinkedIn using OpenID Connect** e
+https://developer.linkedin.com → Create app (exige uma Página de empresa sua).
+Em *Products*: **Sign In with LinkedIn using OpenID Connect** e
 **Share on LinkedIn**.
 
 ```env
@@ -410,12 +418,12 @@ LINKEDIN_CLIENT_REDIRECT=https://app.midiamax.com.br/accounts/linkedin/callback
 LINKEDIN_PAGE_ENABLED=false
 ```
 
-Página de empresa exige a **Community Management API** (programa de parceiro) —
-deixe desligado até ter a aprovação.
+Publicar em **Página de empresa** exige a Community Management API, que é
+programa de parceiro — deixe `LINKEDIN_PAGE_ENABLED=false` até ter aprovação.
 
-### 9.4 Pinterest 🟡
+### 10.4 Pinterest
 
-https://developers.pinterest.com → My apps (precisa de conta business)
+https://developers.pinterest.com → My apps (conta business)
 
 ```env
 PINTEREST_ENABLED=true
@@ -427,19 +435,15 @@ PINTEREST_CLIENT_REDIRECT=https://app.midiamax.com.br/accounts/pinterest/callbac
 Escopos: `boards:read`, `boards:write`, `pins:read`, `pins:write`,
 `user_accounts:read`. App começa em trial; produção exige review.
 
-### 9.5 Meta — Facebook e Instagram 🟡 — o processo mais longo
+### 10.5 Meta — Facebook e Instagram
 
-https://developers.facebook.com → Meus apps → criar app tipo **Business**
+https://developers.facebook.com → criar app tipo **Business**
 
-**Configurações → Básico**: copiar App ID e Chave Secreta, e preencher:
+**Configurações → Básico**: App ID e Chave Secreta. Preencher também as URLs de
+privacidade, termos e exclusão de dados (bloco 14) — o portal exige para
+publicar o app.
 
-```
-Política de Privacidade:  https://app.midiamax.com.br/privacidade
-Termos de Serviço:        https://app.midiamax.com.br/termos
-Exclusão de dados:        https://app.midiamax.com.br/exclusao-de-dados
-```
-
-**Produto Facebook Login** → cadastrar **dois** redirects:
+**Facebook Login** → dois redirects:
 
 ```
 https://app.midiamax.com.br/accounts/facebook/callback
@@ -462,14 +466,17 @@ INSTAGRAM_CLIENT_REDIRECT=https://app.midiamax.com.br/accounts/instagram/callbac
 META_PAGE_WALK_SECONDS=20
 ```
 
-Para atender clientes: **App Review** de `pages_manage_posts`,
-`instagram_content_publish` e companhia, **Verificação do Negócio** com CNPJ, e
-app em modo Live. Exige vídeo demonstrando o fluxo completo. Semanas.
+São **dois caminhos de conexão** que aparecem como "Instagram": o direto
+(credenciais do Instagram) e o via Página (credenciais do Facebook). Vale ter os
+dois — o segundo é o que funciona para conta administrada por agência.
 
-Pré-requisito do cliente: conta Instagram **Business ou Creator** vinculada a uma
-Página do Facebook.
+Em modo desenvolvimento você conecta **as suas próprias contas** e testa tudo.
+Para atender clientes: App Review dos escopos e Verificação do Negócio com CNPJ.
 
-### 9.6 TikTok 🟡
+Pré-requisito do cliente: conta Instagram **Business ou Creator** vinculada a
+uma Página.
+
+### 10.6 TikTok
 
 https://developers.tiktok.com → Manage apps → produto **Content Posting API**
 
@@ -482,46 +489,42 @@ TIKTOK_CLIENT_REDIRECT=https://app.midiamax.com.br/accounts/tiktok/callback
 
 Publicar direto no perfil exige o **audit de Direct Post**; sem ele o conteúdo
 só vira rascunho no app do usuário. App novo não recebe mais Display API — se a
-autorização falhar, enxugue:
+autorização falhar:
 
 ```env
 TIKTOK_SCOPES="user.info.basic,video.publish,video.upload"
 ```
 
-### 9.7 YouTube e Shorts 🟡
+### 10.7 YouTube e Shorts
 
-https://console.cloud.google.com → projeto **dedicado à MidiaMax**
+https://console.cloud.google.com → projeto **dedicado**
 
-1. APIs e Serviços → Biblioteca → habilitar **YouTube Data API v3** e
-   **YouTube Analytics API**
-2. Tela de permissão OAuth → preencher, com links de Termos e Privacidade
-3. Credenciais → ID do cliente OAuth → **Aplicativo da Web** → cadastrar:
-   `https://app.midiamax.com.br/accounts/youtube/callback`
-   `https://app.midiamax.com.br/auth/google/callback`
+1. Habilitar **YouTube Data API v3** e **YouTube Analytics API**
+2. Tela de permissão OAuth preenchida
+3. Credenciais → ID do cliente OAuth → **Aplicativo da Web** → cadastrar
+   `/accounts/youtube/callback` e `/auth/google/callback`
 
 ```env
 YOUTUBE_ENABLED=true
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_CLIENT_REDIRECT=https://app.midiamax.com.br/accounts/youtube/callback
-GOOGLE_AUTH_ENABLED=false
-GOOGLE_AUTH_CALLBACK=https://app.midiamax.com.br/auth/google/callback
 ```
 
 Escopos `youtube.upload` e `youtube.readonly` são sensíveis e exigem verificação
-do app no Google.
+do app.
 
-**Peça aumento de quota no dia 1.** O default do Data API é 10.000 unidades/dia e
-um upload custa ~1.600 → **~6 vídeos/dia para a plataforma inteira**, somando
-todos os clientes. Sem aumento, não existe produto.
+**Peça aumento de quota no dia 1.** O default do Data API é 10.000 unidades/dia
+e um upload custa ~1.600 → **~6 vídeos/dia para a plataforma inteira**, somando
+todos os clientes.
 
-Shorts não tem API separada: é a Data API, e o YouTube classifica pelo formato.
+Shorts não tem API separada: é a Data API, e o YouTube classifica pelo formato
+(vertical, até 3 min).
 
-Use um projeto Google **dedicado**. Reaproveitar um projeto de outro produto faz
-a tela de consentimento mostrar o nome errado ao seu cliente e atrapalha a
-verificação.
+Use um projeto Google **dedicado** — reaproveitar projeto de outro produto faz a
+tela de consentimento mostrar o nome errado ao seu cliente.
 
-### 9.8 Desligar o que não usamos 🔴
+### 10.8 Desligar o que não usamos 🔴
 
 `Platform::isEnabled()` olha **só a flag, nunca a credencial**, e todas default
 para `true`. Sem isto o cliente vê botão "Conectar" que estoura no OAuth:
@@ -536,12 +539,10 @@ GOOGLE_BUSINESS_ENABLED=false
 
 ---
 
-## 10. Inteligência artificial 🟡
+## 11. Inteligência artificial 🟡
 
-> **Status:** ✅ Gemini gerando em pt-BR, modelo fixado num alias `-latest`.
-> Sem limite de consumo por plano — risco de margem.
-
-Sem chave, o app esconde os recursos de IA sozinho (`aiEnabled`).
+Liga geração e ajuste de legenda no compositor. Sem chave, o app esconde os
+recursos de IA sozinho.
 
 **Gemini** — https://aistudio.google.com/apikey
 
@@ -549,33 +550,60 @@ Sem chave, o app esconde os recursos de IA sozinho (`aiEnabled`).
 AI_TEXT_PROVIDER=gemini
 GEMINI_API_KEY=
 GEMINI_TEXT_MODEL=gemini-flash-lite-latest
+AI_AUDIO_PROVIDER=
+ELEVENLABS_API_KEY=
 ```
 
 **Fixe o modelo com um alias `-latest`.** Modelos são aposentados pelo provedor e
-o driver reporta *"AI provider is overloaded"* — mensagem que despista
-completamente, porque a causa real é um 404 *"no longer available to new users"*.
-Diagnostique chamando a API direto:
+o driver reporta *"AI provider is overloaded"* — mensagem que despista, porque a
+causa real é um 404 *"no longer available to new users"*. Diagnostique chamando
+a API direto:
 
 ```bash
 curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY"
 ```
 
 Outros provedores: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`
-(permite trocar de modelo sem mexer em config), `ELEVENLABS_API_KEY` (áudio).
+(troca de modelo sem mexer em config).
 
-⚠️ **O custo é seu, não do cliente.** Cada legenda sai da sua chave. Com
-assinatura de preço fixo, um cliente intensivo come a margem — e **não existe
-limite de IA por plano no código** (a tabela `workspace_ai_usages` existe mas
-nenhum código a usa).
+⚠️ **O custo é seu, não do cliente.** Cada legenda sai da sua chave, e **não
+existe limite de IA por plano no código** — a tabela `workspace_ai_usages`
+existe mas nenhum código a usa.
 
 ---
 
-## 11. Observabilidade ⚪
+## 12. Fontes de mídia no compositor ⚪
 
-> **Status:** ❌ `HORIZON_ALLOWED_EMAILS` de produção e uptime externo pendentes.
+Liga os botões de importar imagem de dentro do editor de post.
 
 ```env
-HORIZON_ALLOWED_EMAILS=voce@midiamax.com.br     # 🔴 ver aviso abaixo
+UNSPLASH_ACCESS_KEY=
+UNSPLASH_SECRET_KEY=
+GOOGLE_DRIVE_ENABLED=false
+GOOGLE_PHOTOS_ENABLED=false
+GOOGLE_MEDIA_CLIENT_ID=
+GOOGLE_MEDIA_CLIENT_SECRET=
+GOOGLE_MEDIA_CLIENT_REDIRECT=https://app.midiamax.com.br/integrations/google/callback
+GOOGLE_MEDIA_API_KEY=
+GOOGLE_MEDIA_APP_ID=
+CANVA_ENABLED=false
+CANVA_CLIENT_ID=
+CANVA_CLIENT_SECRET=
+```
+
+- Unsplash: https://unsplash.com/developers
+- Drive e Photos: projeto Google **separado** do YouTube. Nada herda de
+  `GOOGLE_CLIENT_ID`. Passo a passo em `MEDIA_INTEGRATIONS_SETUP.md`
+- Canva: exige integração pública aprovada por eles
+
+Cada fonte só aparece quando a flag está ligada **e** as chaves preenchidas.
+
+---
+
+## 13. Observabilidade ⚪ (com um item 🔴)
+
+```env
+HORIZON_ALLOWED_EMAILS=voce@midiamax.com.br
 NIGHTWATCH_ENABLED=false
 NIGHTWATCH_TOKEN=
 POSTHOG_ENABLED=false
@@ -585,25 +613,24 @@ GTM_ID=
 ```
 
 🔴 **`HORIZON_ALLOWED_EMAILS` é obrigatório em produção.** É a lista de e-mails
-que acessa `/horizon` (filas e jobs falhando). Em `APP_ENV=local` o gate nem é
-aplicado — `/horizon` fica **aberto sem autenticação**. Em produção, sem essa
-variável, ninguém entra.
+que acessa `/horizon`, o painel de filas e jobs falhando — onde você descobre
+que um post agendado não publicou. Em `APP_ENV=local` o gate nem é aplicado e
+`/horizon` fica **aberto**; em produção, sem a variável, ninguém entra.
 
-O Telescope tem gate com lista vazia e cravada no código: ninguém acessa fora de
+Telescope tem gate com lista vazia cravada no código: ninguém acessa fora de
 local. Mantenha `TELESCOPE_ENABLED=false`.
 
 ---
 
-## 12. Páginas legais e dados do controlador 🔴
+## 14. URLs das páginas internas 🔴
 
-> **Status:** ✅ páginas no ar com os dados do controlador. ⚠️ falta e-mail de
-> contato real e **revisão jurídica**.
-
-Sem as duas primeiras, os links do app apontam para **trypost.it**.
+Sem as duas primeiras, os links de Termos e Privacidade do app apontam para o
+**site do projeto original**. As páginas são servidas pela própria aplicação.
 
 ```env
 LEGAL_TERMS_URL=https://app.midiamax.com.br/termos
 LEGAL_PRIVACY_URL=https://app.midiamax.com.br/privacidade
+MIDIAMAX_SOURCE_URL=https://github.com/LeonardoMarcelo/midiamax-app
 MIDIAMAX_LEGAL_NAME=
 MIDIAMAX_CNPJ=
 MIDIAMAX_ADDRESS=
@@ -611,31 +638,28 @@ MIDIAMAX_SUPPORT_EMAIL=suporte@midiamax.com.br
 MIDIAMAX_PRIVACY_EMAIL=privacidade@midiamax.com.br
 MIDIAMAX_JURISDICTION=
 MIDIAMAX_LEGAL_UPDATED_AT=
-MIDIAMAX_SOURCE_URL=https://github.com/LeonardoMarcelo/midiamax-app
 ```
 
-`MIDIAMAX_VERSION` e `MIDIAMAX_COMMIT` são preenchidos pelo `scripts/deploy.sh` a
-partir dos labels da imagem — não editar à mão. Alimentam `/codigo-fonte`, que é
-obrigação da AGPL §13.
+Os campos `MIDIAMAX_*` preenchem os dados do responsável nas páginas; a página
+omite a linha quando o valor está vazio. Os portais da Meta e da TikTok pedem
+essas URLs no cadastro do app, e a Meta pede também
+`https://app.midiamax.com.br/exclusao-de-dados`.
 
-> O texto das páginas cobre o que Meta, TikTok e LGPD verificam, mas **precisa de
-> revisão jurídica** antes de submeter app review e antes do primeiro cliente.
+`MIDIAMAX_VERSION` e `MIDIAMAX_COMMIT` são preenchidos pelo `scripts/deploy.sh`
+a partir dos labels da imagem — não editar à mão.
 
 ---
 
-## 13. GitHub — build args da imagem 🔴
+## 15. Build args da imagem 🔴
 
-> **Status:** ✅ as três configuradas. `APP_DOMAIN` está como `app.midiamax.com.br`
-> — se o domínio final for outro, trocar e **rebuildar a imagem**.
-
-Não vão no `.env`: entram no bundle JS no **build**. Em `midiamax-app` →
+**Não vão no `.env`**: entram no bundle JS no build. Em `midiamax-app` →
 Settings → Secrets and variables → **Actions**:
 
-| Tipo     | Nome               | Valor                                                 |
-| -------- | ------------------ | ----------------------------------------------------- |
-| Variable | `APP_NAME`       | `MidiaMax`                                          |
-| Variable | `APP_DOMAIN`     | `app.midiamax.com.br`                               |
-| Secret   | `REVERB_APP_KEY` | **idêntico** ao `REVERB_APP_KEY` do `.env` |
+| Tipo | Nome | Valor |
+| --- | --- | --- |
+| Variable | `APP_NAME` | `MidiaMax` |
+| Variable | `APP_DOMAIN` | `app.midiamax.com.br` |
+| Secret | `REVERB_APP_KEY` | **idêntico** ao do `.env` |
 
 Mudar qualquer um exige **rebuild da imagem** — reiniciar o container não basta.
 
@@ -644,39 +668,7 @@ que tenha `read:packages`.
 
 ---
 
-## 14. Checklist de go-live
-
-**Infra**
-
-- [ ] DNS apontando, HTTPS emitido pelo Caddy
-- [x] `APP_KEY` e chaves do Passport geradas — ⚠️ **ainda precisam ir para o seu gerenciador de senhas**
-- [ ] `APP_DEBUG=false`, `APP_ENV=production`, `TELESCOPE_ENABLED=false`
-- [ ] `HORIZON_ALLOWED_EMAILS` preenchido
-- [ ] Backup automático do Postgres rodando **e testado com um restore real**
-- [ ] Cópia dos backups para fora do servidor
-- [ ] Monitoramento de uptime externo
-
-**Billing**
-
-- [x] Produtos e preços criados, `price_...` no `.env`, `PlanSeeder` rodado
-- [x] Rótulos `MIDIAMAX_PRICE_*` batendo com o que o Stripe cobra
-- [x] Webhook criado, eventos habilitados, `whsec_` **daquele** endpoint
-- [ ] Um checkout de teste ponta a ponta em modo de teste
-
-**Plataformas**
-
-- [ ] Redirects cadastrados em cada portal, idênticos ao `.env`
-- [x] Plataformas não usadas com `*_ENABLED=false`
-- [x] Webhook do Telegram registrado
-
-**Legal**
-
-- [x] `/termos`, `/privacidade`, `/exclusao-de-dados` e `/codigo-fonte` abrindo
-- [x] Dados do controlador preenchidos
-- [ ] Textos revisados por advogado
-- [ ] Repo público sincronizado com o que está em produção (AGPL §13)
-
-**Verificação final**
+## 16. Verificação final
 
 ```bash
 for p in / /login /register /termos /privacidade /exclusao-de-dados /codigo-fonte; do
@@ -684,4 +676,13 @@ for p in / /login /register /termos /privacidade /exclusao-de-dados /codigo-font
 done
 ```
 
-Todas 200. Depois: cadastrar, conectar uma rede, agendar um post e ver publicar.
+Todas 200. Depois, no produto:
+
+- [ ] cadastrar uma conta e cair no calendário
+- [ ] e-mail de verificação chega
+- [ ] só as plataformas configuradas aparecem em *Contas*
+- [ ] conectar uma rede e publicar um post agendado
+- [ ] websocket conecta (console do browser sem erro)
+- [ ] checkout em modo de teste completa e a assinatura aparece no app
+- [ ] cancelar no Stripe e ver o acesso cair (prova que o webhook funciona)
+- [ ] `/horizon` acessível só para os e-mails da allowlist
