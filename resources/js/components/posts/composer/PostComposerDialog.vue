@@ -2064,20 +2064,30 @@ const openedSnapshot = ref<string | null>(null);
 
 const editSnapshot = (): string =>
     JSON.stringify({
-        content: composition.content.value,
-        media: composition.media.value.map((item) => [
-            item.id,
-            item.meta ?? null,
-        ]),
-        overrides: composition.overrides.value,
-        labels: composition.labelIds.value,
-        scheduledAt: composition.scheduledAt.value,
+        submission: composition.materialize(
+            PostStatus.Scheduled,
+            scheduleMode.value === 'next' || scheduleMode.value === 'top'
+                ? scheduleMode.value
+                : null,
+        ),
+        scheduleMode: scheduleMode.value,
     });
 
-onMounted(async () => {
-    await nextTick();
-    openedSnapshot.value = editSnapshot();
-});
+const selectedAccountsLoaded = computed(
+    () =>
+        composition.selectedAccounts.value.length ===
+        composition.selectedAccountIds.value.length,
+);
+
+watch(
+    selectedAccountsLoaded,
+    async (loaded) => {
+        if (!loaded || openedSnapshot.value !== null) return;
+        await nextTick();
+        openedSnapshot.value = editSnapshot();
+    },
+    { immediate: true },
+);
 
 /**
  * Only an edit of a saved post can lose work: a new post is autosaved and

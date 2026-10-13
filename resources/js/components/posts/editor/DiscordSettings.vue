@@ -96,7 +96,13 @@ onMounted(loadChannels);
 
 const channelId = computed({
     get: () => (props.meta?.channel_id as string) ?? '',
-    set: (value: string) => updateMeta({ channel_id: value || null }),
+    set: (value: string) =>
+        updateMeta({
+            channel_id: value || null,
+            channel_name:
+                channels.value.find((channel) => channel.id === value)?.name ??
+                null,
+        }),
 });
 
 const channelOptions = computed<DiscordChannel[]>(() => {
@@ -118,20 +124,6 @@ const channelSelectOptions = computed(() =>
         value: channel.id,
         label: `#${channel.name}`,
     })),
-);
-
-watch(
-    [channelId, channels],
-    () => {
-        const name = channels.value.find(
-            (channel) => channel.id === channelId.value,
-        )?.name;
-
-        if (name && props.meta?.channel_name !== name) {
-            updateMeta({ channel_name: name });
-        }
-    },
-    { immediate: true },
 );
 
 const storedChannelError = useMetaErrors(() => props.platformIndex)('channel_id');
