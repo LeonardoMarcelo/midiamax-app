@@ -66,7 +66,7 @@ com crédito e sem sugerir vínculo.
 | `routes/midiamax.php` | Rotas nossas (hoje: `/codigo-fonte`) | Colisão de path se o upstream criar a mesma rota |
 | `resources/views/midiamax/source.blade.php` | Página de oferta de fonte (§13). HTML puro de propósito | — |
 | `resources/css/midiamax-theme.css` | Override das CSS vars | Upstream renomear variável de tema |
-| `lang/midiamax/{pt-BR,en}/` | Strings novas, namespace `midiamax::` | — |
+| `lang-midiamax/{pt-BR,en}/` | Strings novas, namespace `midiamax::` | — |
 | `database/migrations/midiamax/` | Migrations nossas | — |
 | `docs-midiamax/**`, `CLAUDE.md`, `CUSTOMIZATIONS.md` | Documentação | — |
 | `scripts/midiamax/**` | Automação de update e setup | — |
@@ -106,3 +106,10 @@ Funciona porque o pipeline do Laravel resolve middleware pelo container, então
   próprio exige rebuild.
 - **Logos ficam em `public/images/trypost/`** com o nome original. Renomear a pasta
   exigiria editar os componentes Vue que referenciam o caminho — diff maior, zero ganho.
+- **Traduções em `lang-midiamax/`, não em `lang/midiamax/`.** Cinco testes do
+  upstream fazem `glob(lang_path('*'))` e tratam cada diretório como um locale
+  (`tests/Unit/WebhookTranslationsTest.php`, `tests/Unit/PostsErrorsTranslationTest.php`,
+  `tests/Feature/Repurpose/TranslationKeysTest.php`). Com a pasta dentro de `lang/`,
+  "midiamax" era lido como locale e o `TranslationKeysTest` quebrava procurando
+  `lang/midiamax/repurposes.php`. Um gerador de `lang/php_*.json` (gitignored)
+  também produzia um `php_midiamax.json` fantasma. Regra geral em `CLAUDE.md`.

@@ -98,9 +98,9 @@ em `CUSTOMIZATIONS.md` com o comando de `git diff` do arquivo a vigiar.
 Não edite `lang/pt-BR/*.php`. No `boot()` do provider:
 
 ```php
-// Carrega lang/midiamax-overrides/ com prioridade sobre o lang/ do upstream
+// Carrega lang-midiamax-overrides/ com prioridade sobre o lang/ do upstream
 $this->app['translator']->addNamespace(...);  // ou
-$this->loadJsonTranslationsFrom(base_path('lang/midiamax-overrides'));
+$this->loadJsonTranslationsFrom(base_path('lang-midiamax-overrides'));
 ```
 
 Na prática: se for uma string só, avalie se vale. Em geral é mais barato abrir PR

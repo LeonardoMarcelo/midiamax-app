@@ -92,6 +92,6 @@ class MidiaMaxServiceProvider extends ServiceProvider
      */
     protected function loadMidiaMaxTranslations(): void
     {
-        $this->loadTranslationsFrom(base_path('lang/midiamax'), 'midiamax');
+        $this->loadTranslationsFrom(base_path('lang-midiamax'), 'midiamax');
     }
 }

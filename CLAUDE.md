@@ -45,7 +45,7 @@ Cada linha alterada em arquivo do upstream é conflito futuro garantido.
 | Lógica nova | `app/MidiaMax/**` + bind/listener no `MidiaMaxServiceProvider` | editar controller/service do upstream |
 | Rota nova | `routes/midiamax.php` | `routes/web.php`, `routes/app.php` |
 | Migration | `database/migrations/midiamax/` | `database/migrations/` |
-| String nova | `lang/midiamax/{pt-BR,en}/` → `__('midiamax::…')` | editar `lang/pt-BR/*.php` |
+| String nova | `lang-midiamax/{pt-BR,en}/` → `__('midiamax::…')` | editar `lang/pt-BR/*.php` |
 | Config | `config/midiamax.php` + env | editar `config/trypost.php` |
 | Tema/cores | sobrescrever CSS vars em `resources/css/midiamax-theme.css` | editar `resources/css/app.css` |
 | Trocar classe do upstream | `$this->app->bind(Upstream::class, Nossa::class)` | editar a classe original |
@@ -55,6 +55,27 @@ Cada linha alterada em arquivo do upstream é conflito futuro garantido.
 Se **não existir** hook e for inevitável tocar arquivo do upstream:
 registre em `CUSTOMIZATIONS.md` (arquivo, linhas, motivo, como re-aplicar) no
 **mesmo commit**. Esse arquivo é a checklist de conflito de todo merge.
+
+### Nunca criar pasta nossa dentro de diretório que o upstream varre
+
+Arquivo novo em pasta nova é seguro. Pasta nova **dentro** de uma pasta do
+upstream não é: se o código ou os testes deles enumeram aquele diretório, a nossa
+pasta entra na lista como se fosse um item deles.
+
+Foi o que aconteceu com `lang/midiamax/`: cinco testes fazem
+`glob(lang_path('*'))` e tratam **cada diretório como um locale**, então
+"midiamax" virou um locale e `TranslationKeysTest` quebrou tentando ler
+`lang/midiamax/repurposes.php`. Daí `lang-midiamax/` na raiz, com hífen.
+
+Antes de criar pasta dentro de diretório do upstream, audite:
+
+```bash
+grep -rnE "glob\(|File::directories|scandir|Finder" tests/ app/ | grep -i <diretorio>
+```
+
+Sem glob sobre ele, pode. Com glob, use `<nome>-midiamax/` na raiz.
+`database/migrations/midiamax/` é seguro porque os globs de migration usam
+padrão de nome de arquivo (`migrations/*_nome.php`), não listagem de pasta.
 
 Hoje o diff é de **4 arquivos** (15 linhas + o README substituído, que tem `merge=ours`). Esse número é a métrica de saúde do
 fork — se ele crescer rápido, o custo de atualizar cresce junto.
