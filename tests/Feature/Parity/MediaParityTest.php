@@ -266,6 +266,38 @@ test('user tags and a video cover frame set through the api update and the mcp u
         ->toEqual([['cover_offset_ms' => 1500, 'user_tags' => null], ['cover_offset_ms' => null, 'user_tags' => $tags]]);
 });
 
+test('several people tagged on one photo are kept up to twenty and refused beyond it on the api and mcp', function () {
+    $tags = fn (int $count): array => collect(range(1, $count))
+        ->map(fn (int $index): array => ['username' => "person{$index}", 'x' => 0.5, 'y' => 0.5])
+        ->all();
+
+    foreach ([20 => true, 21 => false] as $count => $accepted) {
+        $apiPost = mediaParityPost($this);
+        $mcpPost = mediaParityPost($this);
+        auth()->forgetGuards();
+        $api = $this->withHeaders(parityApi($this->token))
+            ->putJson(route('api.posts.update', $apiPost), ['status' => 'draft', 'media' => [
+                ['upload_token' => mediaParityUpload($this)->upload_token, 'meta' => ['user_tags' => $tags($count)]],
+            ]]);
+        $mcp = TryPostServer::actingAs($this->user)
+            ->tool(UpdatePostTool::class, ['post_id' => $mcpPost->id, 'media' => [
+                ['upload_token' => mediaParityUpload($this)->upload_token, 'meta' => ['user_tags' => $tags($count)]],
+            ]]);
+
+        if ($accepted) {
+            $api->assertSuccessful();
+            $mcp->assertOk();
+            expect(data_get($apiPost->fresh()->media, '0.meta.user_tags'))->toHaveCount(20)
+                ->and(data_get($mcpPost->fresh()->media, '0.meta.user_tags'))->toHaveCount(20);
+        } else {
+            $api->assertUnprocessable()->assertJsonValidationErrors('media.0.meta');
+            $mcp->assertHasErrors();
+            expect($apiPost->fresh()->media)->toBeEmpty()
+                ->and($mcpPost->fresh()->media)->toBeEmpty();
+        }
+    }
+});
+
 test('a media type the network does not accept gets the same translated message on both surfaces', function () {
     $apiPost = mediaParityPost($this, 'youtube');
     $mcpPost = mediaParityPost($this, 'youtube');

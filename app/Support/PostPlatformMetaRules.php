@@ -18,6 +18,7 @@ use App\Models\SocialAccount;
 use App\Rules\ValidYouTubeDescription;
 use App\Services\Social\ContentSanitizer;
 use Closure;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -36,6 +37,9 @@ class PostPlatformMetaRules
      * taken from a request, and kept when the post's settings are edited.
      */
     public const SYSTEM_KEYS = ['reactions'];
+
+    /** What an Instagram music pick stores; anything else sent with it is dropped. */
+    private const array INSTAGRAM_AUDIO_FIELDS = ['id', 'title', 'artist', 'cover_url', 'preview_url', 'audio_volume', 'video_volume'];
 
     /** Instagram takes up to three collaborators on a feed post, carousel or reel. */
     public const INSTAGRAM_MAX_COLLABORATORS = 3;
@@ -230,7 +234,7 @@ class PostPlatformMetaRules
             'Pinterest: board_id (required to publish — call list-pinterest-boards-tool first, or create-pinterest-board-tool), title (≤100), link (destination URL). Pin description comes from the post content; a video pin cover frame is the media item meta.cover_offset_ms.',
             'Discord: channel_id (required to publish — call list-discord-channels-tool first), channel_name (the channel name shown in the app), mentions ([{token,label}], e.g. {token: "@everyone"} or {token: "<@&roleId>"}), embeds (up to 10 [{title ≤256, description ≤4096, url, image (URL), color (#RRGGBB)}]).',
             'YouTube Shorts: title (≤100, no < or >; omitted, it is derived from the first non-empty line of the content with < and > removed, cut to 100 characters), description (plain text, at most 5000 bytes; omit or null to use the content), category_id (YouTube category id: '.collect(Category::cases())->map(fn (Category $category): string => "{$category->value}=".__($category->labelKey(), [], 'en'))->implode(', ').'; default '.Category::DEFAULT->value.'), privacy_status (public|unlisted|private, default public), license (youtube|creativeCommon), notify_subscribers (default true), embeddable (default true), made_for_kids (default false), is_ai_generated (discloses altered or synthetic content).',
-            'Instagram: is_ai_generated (feed, reels, stories, carousels), share_to_feed (instagram_reel only, default true), collaborators (up to '.self::INSTAGRAM_MAX_COLLABORATORS.' Instagram usernames invited as co-authors; feed, reels and carousels, not stories), trial_graduation (instagram_reel only: MANUAL|SS_PERFORMANCE publishes a trial reel shown only to non-followers, graduated by hand in the app or by Instagram when it performs well; not with collaborators, and only on accounts where Instagram offers trial reels), audio (instagram_reel only, Instagram connected through Facebook: {id} of an Instagram audio track from search-instagram-audio-tool, with optional title and artist, and audio_volume and video_volume from 0 to 100, default 100). An instagram_feed post with a single video publishes as a Reel. People tags are the media item meta.user_tags and a video cover frame is meta.cover_offset_ms.',
+            'Instagram: is_ai_generated (feed, reels, stories, carousels), share_to_feed (instagram_reel only, default true), collaborators (up to '.self::INSTAGRAM_MAX_COLLABORATORS.' Instagram usernames invited as co-authors; feed, reels and carousels, not stories), trial_graduation (instagram_reel only: MANUAL|SS_PERFORMANCE publishes a trial reel shown only to non-followers, graduated by hand in the app or by Instagram when it performs well; not with collaborators, and only on accounts where Instagram offers trial reels), audio (instagram_reel only, Instagram connected through Facebook: {id} of an Instagram audio track from search-instagram-audio-tool, with optional title, artist, cover_url and preview_url copied from that result so the app can show the track, and audio_volume and video_volume from 0 to 100, default 100). An instagram_feed post with a single video publishes as a Reel. People tags are the media item meta.user_tags and a video cover frame is meta.cover_offset_ms.',
             'X: is_ai_generated (sent as made_with_ai, discloses AI-generated media on the post).',
             'Threads: topic_tag (1-50 characters after a leading # is dropped, no . or &). Use content_type threads_ghost_post for a text-only post archived after 24 hours (no media, no topic).',
             'Facebook, Bluesky, LinkedIn: link_preview (default true; false publishes a text post with a link without its preview card).',
@@ -309,6 +313,10 @@ class PostPlatformMetaRules
 
         if (is_array(data_get($meta, 'collaborators'))) {
             $meta['collaborators'] = self::instagramCollaborators($meta['collaborators']);
+        }
+
+        if (is_array(data_get($meta, 'audio'))) {
+            $meta['audio'] = Arr::only($meta['audio'], self::INSTAGRAM_AUDIO_FIELDS);
         }
 
         return $meta;
