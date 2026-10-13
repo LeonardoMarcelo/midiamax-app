@@ -279,8 +279,8 @@ class InstagramPublisher
             'audio_configuration' => filled($audioId) && $this->post->socialAccount?->platform === Platform::InstagramFacebook
                 ? (string) json_encode(array_filter([
                     'audio_id' => (string) $audioId,
-                    'audio_volume' => data_get($this->post->meta, 'audio.audio_volume'),
-                    'video_volume' => data_get($this->post->meta, 'audio.video_volume'),
+                    'audio_volume' => transform(data_get($this->post->meta, 'audio.audio_volume'), fn (mixed $volume): int => (int) $volume),
+                    'video_volume' => transform(data_get($this->post->meta, 'audio.video_volume'), fn (mixed $volume): int => (int) $volume),
                 ], fn (mixed $value): bool => $value !== null))
                 : null,
         ], fn (?string $value): bool => $value !== null);

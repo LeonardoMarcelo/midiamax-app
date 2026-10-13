@@ -10,20 +10,21 @@ use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * What the Instagram Audio API lookups share: the track shape every surface
- * returns and the per-workspace allowance of calls to Meta. Answers served
- * from the cache do not spend the allowance.
+ * returns and the per-workspace allowance of lookups. A lookup that reaches
+ * Meta spends one, whatever number of calls it makes; answers served from the
+ * cache spend none.
  *
  * @see https://developers.facebook.com/docs/instagram-platform/content-publishing/audio-api/
  */
 class InstagramAudio
 {
-    /** Calls to the Audio API a workspace may make per minute, across web, API and MCP. */
+    /** Uncached audio lookups a workspace may make per minute, across web, API and MCP. */
     public const int LOOKUPS_PER_MINUTE = 30;
 
     public const array TYPES = ['music', 'original_sound'];
 
     /**
-     * Counts one call to Meta for the account's workspace.
+     * Counts one uncached lookup for the account's workspace.
      *
      * @throws ThrottleRequestsException when the workspace already spent its minute.
      */

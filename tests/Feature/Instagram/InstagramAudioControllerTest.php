@@ -260,3 +260,42 @@ test('looks up creator pictures for the first ten original sounds and remembers 
 
     Http::assertSentCount(2 + 10 + 2);
 });
+
+test('keeps a search missing a catalogue for a minute only', function () {
+    Http::fake([
+        "{$this->graph}/ig_audio?audio_type=music*" => Http::response(['error' => ['code' => 2]], 500),
+        "{$this->graph}/ig_audio?audio_type=original_sound*" => Http::response(['audio' => []]),
+    ]);
+
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'song']))->assertOk();
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'song']))->assertOk();
+    Http::assertSentCount(2);
+
+    $this->travel(2)->minutes();
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'song']))->assertOk();
+    Http::assertSentCount(4);
+});
+
+test('a failed creator picture lookup is skipped only by the account whose lookup failed', function () {
+    $other = SocialAccount::factory()->create([
+        'workspace_id' => $this->workspace->id,
+        'platform' => Platform::InstagramFacebook,
+        'platform_user_id' => 'ig_2',
+        'access_token' => 'other-page-token',
+    ]);
+
+    Http::fake([
+        "{$this->graph}/ig_audio?audio_type=music*" => Http::response(['audio' => []]),
+        "{$this->graph}/ig_audio?audio_type=original_sound*" => Http::response(['audio' => [['audio_id' => 'sound-1', 'title' => 'Sound', 'ig_username' => 'creator']]]),
+        "{$this->graph}/sound-1*" => Http::sequence()
+            ->push(['error' => ['code' => 190]], 400)
+            ->push(['profile_picture_url' => 'https://example.com/creator.jpg']),
+    ]);
+
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'sound']))
+        ->assertOk()
+        ->assertJsonPath('0.cover_url', null);
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $other, 'q' => 'sound']))
+        ->assertOk()
+        ->assertJsonPath('0.cover_url', 'https://example.com/creator.jpg');
+});

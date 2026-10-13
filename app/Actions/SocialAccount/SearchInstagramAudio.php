@@ -20,7 +20,8 @@ use Illuminate\Support\Str;
  * Audio an Instagram account connected through Facebook may attach to a reel,
  * read from the Instagram Audio API, which lists them under `audio`: music
  * then original sounds (or one of the two catalogues), trending or matching a
- * search. Each answer is kept for ten minutes per account, catalogue and query.
+ * search. Each answer is kept for ten minutes per account, catalogue and query,
+ * and one with a catalogue missing for a minute.
  *
  * @see https://developers.facebook.com/docs/instagram-platform/content-publishing/audio-api/
  */
@@ -40,19 +41,31 @@ class SearchInstagramAudio
     public static function execute(SocialAccount $account, ?string $query = null, ?string $type = null): array
     {
         $query = Str::squish((string) $query);
-        $types = $type === null ? InstagramAudio::TYPES : [$type];
-        $cacheKey = 'instagram:audio-search:'.$account->id.':'.($type ?? 'all').':'.md5(Str::lower($query));
+        $scope = $type ?? 'all';
+        $queryHash = md5(Str::lower($query));
+        $cacheKey = "instagram:audio-search:{$account->id}:{$scope}:{$queryHash}";
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($account, $query, $types): array {
-            InstagramAudio::spend($account);
+        $cached = Cache::get($cacheKey);
 
-            return self::search($account, $query, $types);
-        });
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        InstagramAudio::spend($account);
+
+        [$tracks, $complete] = self::search($account, $query, $type === null ? InstagramAudio::TYPES : [$type]);
+
+        Cache::put($cacheKey, $tracks, $complete ? now()->addMinutes(10) : now()->addMinute());
+
+        return $tracks;
     }
 
     /**
+     * The tracks found and whether every catalogue answered. A catalogue that
+     * failed leaves the answer partial, so it is kept for a minute only.
+     *
      * @param  list<string>  $types
-     * @return list<array{id: string, type: string|null, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
+     * @return array{0: list<array{id: string, type: string|null, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>, 1: bool}
      *
      * @throws ConnectionException
      * @throws RequestException
@@ -83,24 +96,27 @@ class SearchInstagramAudio
 
         $tracks = fn (string $type): Collection => Collection::make((array) data_get($succeeded->get($type)?->json(), 'audio', []))
             ->map(fn (mixed $track): array => InstagramAudio::present($track))
-            ->filter(fn (array $track): bool => $track['id'] !== '');
+            ->filter(fn (array $track): bool => data_get($track, 'id') !== '');
 
         $music = $query === ''
             ? $tracks('music')
             : $tracks('music')->filter(fn (array $track): bool => self::matches($track, $query));
 
-        return $music
+        $found = $music
             ->concat(self::withCreatorPictures($account, $tracks('original_sound')))
             ->unique('id')
             ->values()
             ->all();
+
+        return [$found, $succeeded->count() === count($types)];
     }
 
     /**
      * The search lists an original sound without any picture; its own lookup
      * carries the creator's profile picture, which stands in for the cover.
-     * Only the first few are looked up, together; a picture is kept for a few
-     * hours, as its URL expires, and a failed lookup for a few minutes.
+     * Only the first few are looked up, together. A picture is shared by every
+     * account and kept for a few hours, as its URL expires; a failed lookup may
+     * be this account's token, so only this account skips it, for a few minutes.
      *
      * @param  Collection<int, array{id: string, type: string|null, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>  $sounds
      * @return Collection<int, array{id: string, type: string|null, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
@@ -109,7 +125,9 @@ class SearchInstagramAudio
     {
         $missing = $sounds
             ->take(self::PICTURE_LOOKUPS)
-            ->filter(fn (array $sound): bool => blank($sound['cover_url']) && ! Cache::has(self::pictureCacheKey($sound['id'])))
+            ->filter(fn (array $sound): bool => blank(data_get($sound, 'cover_url'))
+                && ! Cache::has(self::pictureCacheKey(data_get($sound, 'id')))
+                && ! Cache::has(self::failedPictureCacheKey($account, data_get($sound, 'id'))))
             ->pluck('id');
 
         if ($missing->isNotEmpty()) {
@@ -123,26 +141,31 @@ class SearchInstagramAudio
                     ]))
                 ->all());
 
-            collect($responses)->each(function (mixed $response, string $id): void {
-                $found = $response instanceof Response && $response->successful();
+            collect($responses)->each(function (mixed $response, string $id) use ($account): void {
+                if ($response instanceof Response && $response->successful()) {
+                    Cache::put(self::pictureCacheKey($id), (string) data_get($response->json(), 'profile_picture_url', ''), now()->addHours(6));
 
-                Cache::put(
-                    self::pictureCacheKey($id),
-                    $found ? (string) data_get($response->json(), 'profile_picture_url', '') : '',
-                    $found ? now()->addHours(6) : now()->addMinutes(10),
-                );
+                    return;
+                }
+
+                Cache::put(self::failedPictureCacheKey($account, $id), true, now()->addMinutes(10));
             });
         }
 
         return $sounds->map(fn (array $sound): array => [
             ...$sound,
-            'cover_url' => $sound['cover_url'] ?? (filled($picture = Cache::get(self::pictureCacheKey($sound['id']))) ? $picture : null),
+            'cover_url' => data_get($sound, 'cover_url') ?? (filled($picture = Cache::get(self::pictureCacheKey(data_get($sound, 'id')))) ? $picture : null),
         ]);
     }
 
     private static function pictureCacheKey(string $audioId): string
     {
         return "instagram:audio-picture:{$audioId}";
+    }
+
+    private static function failedPictureCacheKey(SocialAccount $account, string $audioId): string
+    {
+        return "instagram:audio-picture-failed:{$account->id}:{$audioId}";
     }
 
     /**
@@ -154,7 +177,9 @@ class SearchInstagramAudio
      */
     private static function matches(array $track, string $query): bool
     {
-        $haystack = Str::lower(Str::ascii("{$track['title']} {$track['artist']}"));
+        $title = data_get($track, 'title');
+        $artist = data_get($track, 'artist');
+        $haystack = Str::lower(Str::ascii("{$title} {$artist}"));
 
         return collect(preg_split('/\s+/', Str::lower(Str::ascii($query))) ?: [])
             ->filter()

@@ -96,8 +96,10 @@ Route::middleware(['auth:api', 'workspace.token', 'throttle:api'])->group(functi
         ->middleware('throttle:60,1')
         ->name('api.social-accounts.tiktok-creator-info');
     Route::get('/social-accounts/{account}/instagram-audio', [SocialAccountController::class, 'instagramAudio'])
+        ->middleware('throttle:60,1')
         ->name('api.social-accounts.instagram-audio');
     Route::get('/social-accounts/{account}/instagram-audio/{audioId}', [SocialAccountController::class, 'instagramAudioShow'])
+        ->middleware('throttle:60,1')
         ->name('api.social-accounts.instagram-audio.show');
     Route::get('/social-accounts/{account}/channels', [SocialAccountController::class, 'channels'])
         ->middleware('throttle:60,1')

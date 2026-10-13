@@ -14,9 +14,11 @@ use App\Mcp\Tools\SocialAccount\SearchInstagramAudioTool;
 use App\Models\SocialAccount;
 use App\Models\Workspace;
 use App\Services\Social\Discord\DiscordClient;
+use App\Support\Social\InstagramAudio;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -211,6 +213,26 @@ test('instagram audio lookups of another workspace are refused on the api and mc
     auth()->forgetGuards();
     $this->withHeaders(parityApi($this->token))->getJson(route('api.social-accounts.instagram-audio', $foreign))->assertNotFound();
     TryPostServer::actingAs($this->user)->tool(SearchInstagramAudioTool::class, ['account_id' => $foreign->id])->assertHasErrors();
+
+    Http::assertNothingSent();
+});
+
+test('instagram audio refuses lookups past the workspace allowance on the api and mcp', function () {
+    $instagram = SocialAccount::factory()->instagram()->create(['workspace_id' => $this->workspace->id, 'platform' => Platform::InstagramFacebook]);
+    $message = __('posts.form.instagram.music.too_many_searches');
+    Http::fake();
+
+    foreach (range(1, InstagramAudio::LOOKUPS_PER_MINUTE) as $lookup) {
+        RateLimiter::hit("instagram-audio:{$this->workspace->id}", 60);
+    }
+
+    $this->withHeaders(parityApi($this->token))->getJson(route('api.social-accounts.instagram-audio', [$instagram, 'q' => 'grudge']))
+        ->assertTooManyRequests()
+        ->assertHeader('Retry-After');
+    $this->withHeaders(parityApi($this->token))->getJson(route('api.social-accounts.instagram-audio.show', [$instagram, '111']))
+        ->assertTooManyRequests();
+    TryPostServer::actingAs($this->user)->tool(SearchInstagramAudioTool::class, ['account_id' => $instagram->id, 'q' => 'grudge'])->assertHasErrors([$message]);
+    TryPostServer::actingAs($this->user)->tool(GetInstagramAudioTool::class, ['account_id' => $instagram->id, 'audio_id' => '111'])->assertHasErrors([$message]);
 
     Http::assertNothingSent();
 });

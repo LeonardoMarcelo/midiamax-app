@@ -2565,7 +2565,7 @@ test('instagram publisher sends collaborators and a trial reel on a reel, and no
         && data_get($request->data(), 'audio_configuration') === null);
 });
 
-test('instagram publisher attaches music to a reel of an account connected through Facebook', function () {
+test('instagram publisher attaches music to a reel of an account connected through Facebook', function (int|string $videoVolume) {
     $account = SocialAccount::factory()->create([
         'workspace_id' => $this->workspace->id,
         'platform' => Platform::InstagramFacebook,
@@ -2575,7 +2575,7 @@ test('instagram publisher attaches music to a reel of an account connected throu
     $post = Post::factory()->forAccount($account, ContentType::InstagramReel)->create([
         'user_id' => $this->user->id,
         'content' => 'With music',
-        'meta' => ['audio' => ['id' => 'audio-1', 'title' => 'Song', 'video_volume' => 20]],
+        'meta' => ['audio' => ['id' => 'audio-1', 'title' => 'Song', 'video_volume' => $videoVolume]],
         'media' => [[
             'id' => 'test-media-video',
             'path' => 'media/2026-01/test-video.mp4',
@@ -2599,7 +2599,7 @@ test('instagram publisher attaches music to a reel of an account connected throu
     Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/igf_1/media')
         && json_decode((string) data_get($request->data(), 'audio_configuration'), true) === ['audio_id' => 'audio-1', 'video_volume' => 20]
         && data_get($request->data(), 'collaborators') === null && data_get($request->data(), 'trial_params') === null);
-});
+})->with(['volume as a number' => [20], 'volume as text' => ['20']]);
 
 test('instagram publisher sends collaborators on the carousel container only', function () {
     $this->post->update([
