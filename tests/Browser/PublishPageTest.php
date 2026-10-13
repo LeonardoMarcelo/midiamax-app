@@ -466,8 +466,8 @@ test('the channel page adapts its filters, tabs, calendar link and notes button 
     expect($page->script($notes))->toBe(['inside' => true, 'beside' => false]);
 
     $page->resize(1280, 800);
-    waitForPublishPageScript($page, 'document.querySelector(\'[data-testid^="post-notes-trigger-"]\').getBoundingClientRect().left >= document.querySelector(\'[data-testid^="post-card-"] article\').getBoundingClientRect().right');
-    expect($page->script($notes))->toBe(['inside' => false, 'beside' => true]);
+    waitForPublishPageTestId($page, "post-notes-trigger-{$post->id}");
+    expect($page->script($notes))->toBe(['inside' => true, 'beside' => false]);
 
     $page->resize(390, 844);
     waitForPublishPageTestId($page, 'publish-tabs-mobile-trigger');

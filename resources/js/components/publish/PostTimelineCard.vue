@@ -5,6 +5,8 @@ import {
     IconCircleDashedPlus,
     IconEdit,
     IconExternalLink,
+    IconMessageCircle,
+    IconMessageCircleFilled,
     IconGripVertical,
     IconListNumbers,
     IconClockPause,
@@ -24,7 +26,7 @@ import { edit as editPostRoute } from '@/actions/App/Http/Controllers/App/PostCo
 import ChannelAvatar from '@/components/ChannelAvatar.vue';
 import MediaLightbox from '@/components/media/MediaLightbox.vue';
 import PlatformBrandIcon from '@/components/PlatformBrandIcon.vue';
-import PostNotesPopover from '@/components/posts/PostNotesPopover.vue';
+import PostNotesPanel from '@/components/posts/editor/PostNotesPanel.vue';
 import PostScheduleModeBadge from '@/components/posts/PostScheduleModeBadge.vue';
 import ApprovePostButton from '@/components/publish/ApprovePostButton.vue';
 import PostCardLabels from '@/components/publish/PostCardLabels.vue';
@@ -37,12 +39,16 @@ import PostRecurrenceSummary from '@/components/publish/PostRecurrenceSummary.vu
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useAtLeastBreakpoint } from '@/composables/useBreakpoint';
 import { useDisplayTimezone } from '@/composables/useDisplayTimezone';
 import { openPostComposer } from '@/composables/useGlobalPostComposer';
 import {
@@ -162,7 +168,23 @@ const scheduleMode = computed(() => {
 });
 
 const showNotes = computed(() => !props.popover && !isPublishing.value);
-const notesBesideCard = useAtLeastBreakpoint('lg');
+const notesOpen = ref(openPostNotesId.value === props.post.id);
+const noteCount = ref(props.post.notes_count);
+
+watch(
+    () => props.post.notes_count,
+    (count) => {
+        noteCount.value = count;
+    },
+);
+
+watch(openPostNotesId, (id) => {
+    if (id === props.post.id) notesOpen.value = true;
+});
+
+const changeNoteCount = (delta: number): void => {
+    noteCount.value = Math.max(0, noteCount.value + delta);
+};
 
 const time = computed(() => {
     if (props.tab === 'sent') {
@@ -500,6 +522,7 @@ defineExpose({ openDetails });
             </Button>
         </div>
 
+        <Collapsible v-model:open="notesOpen" as-child>
         <article
             class="min-w-0 overflow-hidden"
             :class="{
@@ -704,18 +727,7 @@ defineExpose({ openDetails });
                         +{{ hiddenVisuals }}
                     </button>
                 </div>
-                <div
-                    v-if="showNotes && !notesBesideCard"
-                    class="relative z-10 shrink-0"
-                >
-                    <PostNotesPopover
-                        :post-id="post.id"
-                        :count="post.notes_count"
-                        :current-user-id="authUserId"
-                        :initial-open="openPostNotesId === post.id"
-                        :highlight-note-id="highlightNoteId"
-                    />
-                </div>
+
                 <MediaLightbox
                     v-model:open="lightboxOpen"
                     :items="visuals"
@@ -792,6 +804,31 @@ defineExpose({ openDetails });
                     class="flex max-w-full shrink-0 flex-wrap items-center gap-1 max-sm:ms-auto"
                     :data-testid="`post-actions-${post.id}`"
                 >
+                    <CollapsibleTrigger v-if="showNotes" as-child>
+                        <Button
+                            variant="outline"
+                            class="data-[state=open]:bg-accent"
+                            :data-testid="`post-notes-trigger-${post.id}`"
+                        >
+                            <IconMessageCircleFilled
+                                v-if="noteCount > 0"
+                                class="size-4"
+                                :data-testid="`post-notes-filled-icon-${post.id}`"
+                            />
+                            <IconMessageCircle
+                                v-else
+                                class="size-4 text-muted-foreground"
+                                :data-testid="`post-notes-outline-icon-${post.id}`"
+                            />
+                            {{ $t('notes.title') }}
+                            <span
+                                v-if="noteCount > 0"
+                                class="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-medium text-muted-foreground tabular-nums"
+                                :data-testid="`post-notes-count-${post.id}`"
+                                >{{ noteCount }}</span
+                            >
+                        </Button>
+                    </CollapsibleTrigger>
                     <template v-if="isPending && canApprove">
                         <ApprovePostButton :post="post" :test-key="post.id" />
                         <Button
@@ -931,19 +968,23 @@ defineExpose({ openDetails });
                     />
                 </div>
             </div>
+            <CollapsibleContent
+                v-if="showNotes"
+                class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none"
+                :data-testid="`post-notes-section-${post.id}`"
+            >
+                <div class="border-t border-border-strong">
+                    <PostNotesPanel
+                        :post-id="post.id"
+                        :current-user-id="authUserId"
+                        :highlight-note-id="highlightNoteId"
+                        @count-change="changeNoteCount"
+                    />
+                </div>
+            </CollapsibleContent>
         </article>
+        </Collapsible>
 
-        <div
-            v-if="showNotes && notesBesideCard"
-            class="absolute top-0 left-full ms-1"
-        >
-            <PostNotesPopover
-                :post-id="post.id"
-                :count="post.notes_count"
-                :current-user-id="authUserId"
-                :initial-open="openPostNotesId === post.id"
-                :highlight-note-id="highlightNoteId"
-            />
-        </div>
+
     </div>
 </template>

@@ -94,7 +94,7 @@ test('the note composer enables send only with text and sends on Enter but not S
     waitForPostNotesTestId($page, 'notes-empty');
 
     $page->assertVisible('@notes-empty')
-        ->assertMissing('@post-notes-count')
+        ->assertMissing("@post-notes-count-{$post->id}")
         ->assertDisabled('@note-send');
 
     $page->fill('@note-input', '   ');
@@ -114,7 +114,7 @@ test('the note composer enables send only with text and sends on Enter but not S
     $page->assertSeeIn('@note-body', 'First line')
         ->assertValue('@note-input', '')
         ->assertDisabled('@note-send')
-        ->assertSeeIn('@post-notes-count', '1')
+        ->assertSeeIn("@post-notes-count-{$post->id}", '1')
         ->assertVisible("@post-notes-filled-icon-{$post->id}")
         ->assertNoJavaScriptErrors();
 
