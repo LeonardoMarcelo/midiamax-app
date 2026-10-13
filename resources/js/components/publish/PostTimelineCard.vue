@@ -5,7 +5,8 @@ import {
     IconCircleDashedPlus,
     IconEdit,
     IconExternalLink,
-    IconMessage,
+    IconMessageCircle,
+    IconMessageCircleFilled,
     IconGripVertical,
     IconListNumbers,
     IconClockPause,
@@ -807,7 +808,7 @@ defineExpose({ openDetails });
                         <Button
                             variant="outline"
                             size="icon"
-                            class="data-[state=open]:bg-accent"
+                            class="relative data-[state=open]:bg-accent"
                             :aria-label="
                                 noteCount > 0
                                     ? `${$t('notes.title')} (${noteCount})`
@@ -815,37 +816,22 @@ defineExpose({ openDetails });
                             "
                             :data-testid="`post-notes-trigger-${post.id}`"
                         >
-                            <span
+                            <IconMessageCircleFilled
                                 v-if="noteCount > 0"
-                                class="relative inline-flex size-6 text-foreground"
+                                class="size-4 text-foreground"
                                 :data-testid="`post-notes-filled-icon-${post.id}`"
-                            >
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    class="size-6"
-                                    fill="currentColor"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        d="M18 3a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-4.724l-4.762 2.857a1 1 0 0 1 -1.508 -.743l-.006 -.114v-2h-1a4 4 0 0 1 -3.995 -3.8l-.005 -.2v-8a4 4 0 0 1 4 -4z"
-                                    />
-                                </svg>
-                                <span
-                                    class="absolute inset-x-0 top-1 text-center leading-[14px] font-semibold text-background tabular-nums"
-                                    :class="
-                                        noteCount > 99
-                                            ? 'text-[8.5px] tracking-tight'
-                                            : 'text-[10px]'
-                                    "
-                                    :data-testid="`post-notes-count-${post.id}`"
-                                    >{{ noteCount > 99 ? '99+' : noteCount }}</span
-                                >
-                            </span>
-                            <IconMessage
+                            />
+                            <IconMessageCircle
                                 v-else
-                                class="size-5 text-muted-foreground"
+                                class="size-4 text-muted-foreground"
                                 :data-testid="`post-notes-outline-icon-${post.id}`"
                             />
+                            <span
+                                v-if="noteCount > 0"
+                                class="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary-strong px-1 text-[10px] leading-none font-semibold text-primary-strong-foreground tabular-nums ring-2 ring-background"
+                                :data-testid="`post-notes-count-${post.id}`"
+                                >{{ noteCount > 99 ? '99+' : noteCount }}</span
+                            >
                         </Button>
                     </CollapsibleTrigger>
                     <template v-if="isPending && canApprove">
