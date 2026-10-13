@@ -102,7 +102,17 @@ Disco local não escala e complica backup: use object storage desde o início.
 ### E-mail
 
 `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT=587`, `MAIL_USERNAME`,
-`MAIL_PASSWORD`, `MAIL_SCHEME=tls`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`.
+`MAIL_PASSWORD`, `MAIL_SCHEME=smtp`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`.
+
+**`MAIL_SCHEME=tls` não existe no Laravel** e derruba todo envio com
+*"The tls scheme is not supported"*. Use `smtp` (STARTTLS, porta 587) ou
+`smtps` (TLS, porta 465). O `compose.prod.yaml` do upstream traz `tls`, que
+está errado — testado em 13/10/2026.
+
+O mailer `resend` existe em `config/mail.php` mas o pacote
+`resend/resend-laravel` **não está instalado**: `MAIL_MAILER=resend` quebra.
+Para usar Resend, vá por SMTP — `smtp.resend.com`, porta 587, usuário
+`resend`, senha = API key.
 
 O default da imagem é `log`: sem SMTP real, convite de equipe, verificação de
 e-mail e reset de senha **não chegam**. Resend, Postmark, SES ou Brevo
