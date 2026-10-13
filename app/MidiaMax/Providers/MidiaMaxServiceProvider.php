@@ -73,6 +73,37 @@ class MidiaMaxServiceProvider extends ServiceProvider
         $this->loadMidiaMaxMigrations();
         $this->loadMidiaMaxRoutes();
         $this->loadMidiaMaxTranslations();
+        $this->alignBillingLabels();
+    }
+
+    /**
+     * Alinha o preco EXIBIDO com o preco COBRADO.
+     *
+     * O upstream cravou os valores em lang/<locale>/billing.php e a tela apenas
+     * traduz a chave — o numero na tela nao tem relacao nenhuma com o price do
+     * Stripe. Trocar o preco no Stripe sem trocar aqui faz o cliente ver um
+     * valor e ser cobrado outro.
+     *
+     * addLines() injeta por cima das linhas ja carregadas, entao sobrescreve a
+     * traducao do upstream sem editar o arquivo deles.
+     */
+    protected function alignBillingLabels(): void
+    {
+        $labels = config('midiamax.billing_labels');
+        $translator = $this->app['translator'];
+
+        foreach (['pt-BR', 'en'] as $locale) {
+            // Ordem importa. addLines() marca o grupo como carregado; chamado
+            // antes do lang/<locale>/billing.php ser lido, o translator nunca
+            // le o arquivo e TODAS as outras chaves de billing viram chave crua
+            // na tela. Este get() forca a carga do grupo primeiro.
+            $translator->get('billing.plans.monthly', [], $locale);
+
+            $translator->addLines([
+                'billing.subscribe.prices.socials.monthly' => $labels['socials_monthly'],
+                'billing.subscribe.prices.workspaces.monthly' => $labels['workspaces_monthly'],
+            ], $locale);
+        }
     }
 
     /**

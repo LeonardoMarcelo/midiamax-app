@@ -22,6 +22,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Precos exibidos na interface
+    |--------------------------------------------------------------------------
+    |
+    | ATENCAO: o valor que o cliente ve NAO vem do Stripe. O upstream cravou os
+    | precos em lang/<locale>/billing.php (chave billing.subscribe.prices.*) e a
+    | tela de billing apenas traduz aquela chave. Ou seja: mudar o preco no
+    | Stripe nao muda o que aparece na tela — e exibir um valor e cobrar outro e
+    | problema de CDC, nao so de UX.
+    |
+    | Estes rotulos sao injetados por MidiaMaxServiceProvider::alignBillingLabels()
+    | e tem que bater com os price IDs em STRIPE_SOCIALS_MONTHLY e
+    | STRIPE_WORKSPACES_MONTHLY. Conferir os dois juntos a cada mudanca de preco.
+    |
+    */
+
+    'billing_labels' => [
+        'socials_monthly' => env('MIDIAMAX_PRICE_SOCIALS_MONTHLY', 'R$ 129,99'),
+        'workspaces_monthly' => env('MIDIAMAX_PRICE_WORKSPACES_MONTHLY', 'R$ 369,99'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Dados do controlador (paginas legais)
     |--------------------------------------------------------------------------
     |

@@ -117,6 +117,30 @@ o que deixa o bug invisível.
 - **Conferir a cada release:** `git diff <base> <nova-tag> -- config/cashier.php app/Actions/User/CreateUser.php`
 - **Verificar:** `php artisan tinker --execute="echo gettype(config('cashier.trial_days'));"` → `integer`
 
+### Preço exibido ≠ preço cobrado (override de tradução)
+
+`MidiaMaxServiceProvider::alignBillingLabels()`.
+
+O upstream **cravou os valores em `lang/<locale>/billing.php`** (chave
+`billing.subscribe.prices.*`) e a tela de billing só traduz a chave. O número na
+tela não tem relação nenhuma com o `price` do Stripe: trocar o preço lá e não
+aqui faz o cliente ver um valor e ser cobrado outro — problema de CDC, não de UX.
+
+Valores em `config/midiamax.billing_labels`, que **têm que bater** com
+`STRIPE_SOCIALS_MONTHLY` e `STRIPE_WORKSPACES_MONTHLY`. Conferir os dois juntos
+a cada mudança de preço.
+
+**Armadilha do `addLines()`:** ele marca o grupo como carregado. Chamado antes de
+`lang/<locale>/billing.php` ser lido, o translator nunca lê o arquivo e **todas**
+as outras chaves de billing viram chave crua na tela (acontece em silêncio —
+nenhum erro, nenhum teste quebra). Por isso há um `get('billing.plans.monthly')`
+forçando a carga antes do override. Verificar depois de qualquer mexida:
+
+```bash
+php artisan tinker --execute="app()->setLocale('pt-BR');
+  echo __('billing.plans.monthly');"   # tem que sair 'Mensal', nao a chave
+```
+
 ## 5. Decisões que valem lembrar
 
 - **`release-docker.yml` do upstream foi mantido intocado.** Ele dispara em tags
