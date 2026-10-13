@@ -313,7 +313,10 @@ watch(
                 class="size-7 shrink-0 text-xs"
                 fallback-class="bg-sidebar-accent text-sidebar-accent-foreground"
             />
-            <InputGroup class="min-w-0 flex-1" data-testid="note-composer">
+            <InputGroup
+                class="min-w-0 flex-1 rounded-full border-transparent bg-muted shadow-none transition-colors hover:border-border-strong has-[[data-slot=input-group-control]:focus-visible]:bg-card"
+                data-testid="note-composer"
+            >
                 <InputGroupInput
                     ref="composerInput"
                     v-model="newBody"
@@ -321,6 +324,7 @@ watch(
                     autocomplete="off"
                     :placeholder="$t('notes.placeholder')"
                     :aria-label="$t('notes.placeholder')"
+                    class="ps-4"
                     data-testid="note-input"
                     @keydown="handleComposerKeydown"
                 />
@@ -328,6 +332,7 @@ watch(
                     <InputGroupButton
                         variant="default"
                         size="icon-xs"
+                        class="me-0.5 rounded-full disabled:bg-transparent disabled:text-muted-foreground disabled:opacity-100"
                         :disabled="!canSend"
                         :aria-label="$t('notes.send')"
                         data-testid="note-send"
