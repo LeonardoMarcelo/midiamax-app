@@ -251,7 +251,7 @@ watch(
     <section class="flex min-h-0 flex-col gap-3">
         <div
             ref="scrollContainer"
-            class="max-h-80 min-h-0 overflow-y-auto overscroll-contain"
+            class="-mx-2 max-h-80 min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain px-2"
             data-testid="notes-list"
         >
             <div v-if="hasOlderNotes" class="flex justify-start pb-2">

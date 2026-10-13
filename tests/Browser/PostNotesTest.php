@@ -58,6 +58,8 @@ test('adding a note from the popover shows it and emails the other members', fun
     $page->click('@note-send');
     waitForPostNotesTestId($page, 'note-body');
 
+    $page->assertScript('(() => { const list = document.querySelector("[data-testid=notes-list]"); return list.scrollWidth <= list.clientWidth; })()', true);
+
     $page->assertSeeIn('@note-body', 'Please check the @image before Friday')
         ->assertVisible('@note-actions')
         ->assertMissing('@note-react')
