@@ -81,7 +81,12 @@ Detalhes e checklist: `docs-midiamax/04-compliance-agpl.md`.
 - Desligue formatação automática (Prettier/format-on-save) para arquivos do upstream.
   O editor já reformatou `MEDIA_INTEGRATIONS_SETUP.md` uma vez e isso vira conflito
   de merge sem nenhum ganho. Se acontecer: `git checkout -- <arquivo>`.
-- `.claude/settings*.json` estão em `.git/info/exclude` — config pessoal não entra no diff.
+- `.claude/settings*.json` e `compose.override.yaml` estão em `.git/info/exclude` —
+  config pessoal não entra no diff. (`compose.override.yaml` **não** está no
+  `.gitignore` do upstream, apesar do comentário no `.example` dizer que está.)
+- Referência completa de variáveis de ambiente, com origem de cada credencial e
+  escopos por plataforma: `docs-midiamax/06-variaveis-ambiente.md`. O arquivo
+  preenchível é o `.env.example` do repo `midiamax-infra`.
 
 ## Antes de vender (bloqueadores reais, maiores que o código)
 
