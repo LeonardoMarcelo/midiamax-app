@@ -11,7 +11,10 @@ Base atual: tag upstream **v2.0.0** (`7b9eeec9`).
 
 ---
 
-## 1. Arquivos do upstream modificados — 3 arquivos, 15 linhas
+## 1. Arquivos do upstream modificados — 4 arquivos
+
+Três deles somam 15 linhas. O quarto (`README.md`) é substituição completa, mas
+tem `merge=ours`, então nunca conflita.
 
 ### `bootstrap/providers.php` (+2 linhas)
 
@@ -41,6 +44,16 @@ favicons, README), para que merge do upstream nunca sobrescreva nossa identidade
 - **Exige** `git config merge.ours.driver true` em cada clone —
   `scripts/midiamax/setup-clone.sh` faz isso.
 - **Conflito esperado:** baixo (append no fim). Resolução: manter os dois blocos.
+
+### `README.md` (substituído)
+
+O repo é público, então a primeira coisa que alguém lê tem que dizer o que ele é:
+o fonte do serviço MidiaMax, publicado por obrigação da AGPL §13, fork do TryPost
+com crédito e sem sugerir vínculo.
+
+- **Conflito esperado:** nenhum — `merge=ours` no `.gitattributes`.
+- **Efeito colateral:** mudanças de README do upstream são descartadas em silêncio.
+  Se precisar ver o que eles escreveram: `git show v2.1.0:README.md`.
 
 ---
 

@@ -56,7 +56,7 @@ Se **não existir** hook e for inevitável tocar arquivo do upstream:
 registre em `CUSTOMIZATIONS.md` (arquivo, linhas, motivo, como re-aplicar) no
 **mesmo commit**. Esse arquivo é a checklist de conflito de todo merge.
 
-Hoje o diff é de **3 arquivos / 15 linhas**. Esse número é a métrica de saúde do
+Hoje o diff é de **4 arquivos** (15 linhas + o README substituído, que tem `merge=ours`). Esse número é a métrica de saúde do
 fork — se ele crescer rápido, o custo de atualizar cresce junto.
 
 ## Compliance AGPL-3.0 (obrigação legal, não opcional)
