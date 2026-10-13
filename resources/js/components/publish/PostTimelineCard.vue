@@ -5,8 +5,7 @@ import {
     IconCircleDashedPlus,
     IconEdit,
     IconExternalLink,
-    IconMessageCircle,
-    IconMessageCircleFilled,
+    IconMessage,
     IconGripVertical,
     IconListNumbers,
     IconClockPause,
@@ -807,26 +806,46 @@ defineExpose({ openDetails });
                     <CollapsibleTrigger v-if="showNotes" as-child>
                         <Button
                             variant="outline"
+                            size="icon"
                             class="data-[state=open]:bg-accent"
+                            :aria-label="
+                                noteCount > 0
+                                    ? `${$t('notes.title')} (${noteCount})`
+                                    : $t('notes.title')
+                            "
                             :data-testid="`post-notes-trigger-${post.id}`"
                         >
-                            <IconMessageCircleFilled
-                                v-if="noteCount > 0"
-                                class="size-4"
-                                :data-testid="`post-notes-filled-icon-${post.id}`"
-                            />
-                            <IconMessageCircle
-                                v-else
-                                class="size-4 text-muted-foreground"
-                                :data-testid="`post-notes-outline-icon-${post.id}`"
-                            />
-                            {{ $t('notes.title') }}
                             <span
                                 v-if="noteCount > 0"
-                                class="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-medium text-muted-foreground tabular-nums"
-                                :data-testid="`post-notes-count-${post.id}`"
-                                >{{ noteCount }}</span
+                                class="relative inline-flex size-6 text-foreground"
+                                :data-testid="`post-notes-filled-icon-${post.id}`"
                             >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    class="size-6"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M18 3a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-4.724l-4.762 2.857a1 1 0 0 1 -1.508 -.743l-.006 -.114v-2h-1a4 4 0 0 1 -3.995 -3.8l-.005 -.2v-8a4 4 0 0 1 4 -4z"
+                                    />
+                                </svg>
+                                <span
+                                    class="absolute inset-x-0 top-1 text-center leading-[14px] font-semibold text-background tabular-nums"
+                                    :class="
+                                        noteCount > 99
+                                            ? 'text-[8.5px] tracking-tight'
+                                            : 'text-[10px]'
+                                    "
+                                    :data-testid="`post-notes-count-${post.id}`"
+                                    >{{ noteCount > 99 ? '99+' : noteCount }}</span
+                                >
+                            </span>
+                            <IconMessage
+                                v-else
+                                class="size-5 text-muted-foreground"
+                                :data-testid="`post-notes-outline-icon-${post.id}`"
+                            />
                         </Button>
                     </CollapsibleTrigger>
                     <template v-if="isPending && canApprove">
