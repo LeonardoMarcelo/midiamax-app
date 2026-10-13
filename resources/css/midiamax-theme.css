@@ -1,0 +1,27 @@
+/*
+ * Tema MidiaMax — sobrescreve as CSS variables do TryPost sem tocar app.css.
+ *
+ * Por que :root:root e nao :root — app.css importa este arquivo ANTES de
+ * declarar o proprio :root. Com a mesma especificidade, a declaracao mais
+ * tarde ganharia e nada aqui teria efeito. :root:root dobra a especificidade,
+ * entao a ordem de import deixa de importar.
+ *
+ * O upstream usa @theme inline { --color-primary: var(--primary); ... }, ou
+ * seja: trocar a variavel aqui propaga para todas as classes do Tailwind.
+ * Lista completa das variaveis em resources/css/app.css (:root e .dark).
+ *
+ * Enquanto tudo estiver comentado, o visual e o do upstream. Descomente e
+ * ajuste quando a identidade visual da MidiaMax estiver definida.
+ */
+
+:root:root {
+    /* --primary: #ddd6fe; */
+    /* --primary-strong: #6d28d9; */
+    /* --primary-hover: #c4b5fd; */
+}
+
+.dark:root,
+:root.dark {
+    /* --primary: #4c1d95; */
+    /* --primary-strong: #7c3aed; */
+}

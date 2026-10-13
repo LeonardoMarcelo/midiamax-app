@@ -9,3 +9,15 @@
 CHANGELOG.md export-ignore
 README.md export-ignore
 .github/workflows/browser-tests.yml export-ignore
+
+# ===== MidiaMax =====
+# Arquivos de marca: em merge com o upstream, mantem SEMPRE a nossa versao.
+# Precisa de `git config merge.ours.driver true` em cada clone
+# (scripts/midiamax/setup-clone.sh faz isso).
+public/images/trypost/logo-dark.png   merge=ours
+public/images/trypost/logo-light.png  merge=ours
+public/images/emails/logo-header.png  merge=ours
+public/favicon.ico                    merge=ours
+public/favicon.svg                    merge=ours
+public/apple-touch-icon.png           merge=ours
+README.md                             merge=ours
