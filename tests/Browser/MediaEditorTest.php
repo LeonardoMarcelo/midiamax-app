@@ -227,6 +227,8 @@ test('people tagged on an Instagram image are saved with their position', functi
         ->fill('@media-editor-tag-username', '@paulo.castellano')
         ->click('@media-editor-tag-save')
         ->assertVisible('@media-editor-tag-0')
+        ->assertAttribute('@media-editor-tag-link-0', 'href', 'https://www.instagram.com/paulo.castellano/')
+        ->assertAttribute('@media-editor-tag-link-0', 'target', '_blank')
         ->click('@media-editor-apply');
     saveMediaEditorDraft($page);
 

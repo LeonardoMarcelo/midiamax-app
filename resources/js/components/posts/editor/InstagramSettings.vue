@@ -34,6 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { useMetaErrors } from '@/composables/useMetaErrors';
 import { useReelSoundtrack } from '@/composables/useReelSoundtrack';
+import { instagramProfileUrl } from '@/lib/instagram';
 import { rangeFill } from '@/lib/rangeFill';
 import { ContentType } from '@/types/content-type';
 import { Platform } from '@/types/platform';
@@ -393,8 +394,6 @@ const dismissCollaboratorNotice = (): void => {
     collaboratorNoticeOpen.value = false;
 };
 
-const profileUrl = (username: string): string =>
-    `https://www.instagram.com/${encodeURIComponent(username)}/`;
 
 const trialGraduation = computed(
     () => (props.meta.trial_graduation as string | null | undefined) ?? '',
@@ -774,7 +773,7 @@ onUnmounted(() => {
                             class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
                         >
                             <a
-                                :href="profileUrl(username)"
+                                :href="instagramProfileUrl(username)"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="underline-offset-2 hover:underline"

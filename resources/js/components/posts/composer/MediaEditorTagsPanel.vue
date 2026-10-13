@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { IconAt, IconUserPlus, IconX } from '@tabler/icons-vue';
+import {
+    IconAt,
+    IconExternalLink,
+    IconUserPlus,
+    IconX,
+} from '@tabler/icons-vue';
 import { computed, nextTick, ref, watch } from 'vue';
 
 import { Button } from '@/components/ui/button';
+import { instagramProfileUrl } from '@/lib/instagram';
 import {
     isValidInstagramUsername,
     type MediaEdit,
@@ -167,7 +173,21 @@ const removeTag = (index: number): void => {
                     class="flex size-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-medium text-background"
                     >{{ index + 1 }}</span
                 >
-                <span class="min-w-0 flex-1 truncate">@{{ tag.username }}</span>
+                <span class="min-w-0 flex-1">
+                    <a
+                        :href="instagramProfileUrl(tag.username)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex max-w-full items-center gap-1 underline-offset-2 hover:underline"
+                        :data-testid="`media-editor-tag-link-${index}`"
+                    >
+                        <span class="truncate">@{{ tag.username }}</span>
+                        <IconExternalLink
+                            class="size-3.5 shrink-0 text-muted-foreground"
+                            aria-hidden="true"
+                        />
+                    </a>
+                </span>
                 <button
                     type="button"
                     class="text-muted-foreground hover:text-foreground"
