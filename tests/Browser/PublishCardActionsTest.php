@@ -119,6 +119,7 @@ test('a queued card shows publish now, edit and the menu in order', function () 
     JS);
 
     expect($footer)->toBe([
+        "post-notes-trigger-{$queued->id}",
         "post-publish-now-{$queued->id}",
         "post-edit-{$queued->id}",
         "post-card-menu-{$queued->id}",

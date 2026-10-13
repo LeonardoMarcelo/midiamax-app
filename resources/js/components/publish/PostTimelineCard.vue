@@ -44,6 +44,11 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
@@ -71,6 +76,7 @@ import { compactPublicationMetrics } from '@/lib/publicationMetrics';
 import { recurrenceRuleOf } from '@/lib/recurrence';
 import { copyToClipboard } from '@/lib/utils';
 import { videoFrameUrl } from '@/lib/videoFrame';
+import { settings as channelSettings } from '@/routes/app/channels';
 import type { SidebarChannel } from '@/types/channel';
 import { Platform } from '@/types/platform';
 import {
@@ -116,8 +122,13 @@ const emit = defineEmits<{
 const MAX_THUMBNAILS = 4;
 
 const page = usePage();
-const { canApprove, canCreatePost, canPublishDirectly, requiresApproval } =
-    useWorkspaceAbilities();
+const {
+    canApprove,
+    canCreatePost,
+    canManageAccounts,
+    canPublishDirectly,
+    requiresApproval,
+} = useWorkspaceAbilities();
 const deletePost = inject(deletePostCardKey, () => {});
 const editUrl = inject(editPostCardUrlKey, (post: PostCard) =>
     editPostRoute.url(post.id),
@@ -269,6 +280,20 @@ const contentTypeKey = computed(() =>
 const canQueue = computed(
     () => account.value?.has_posting_schedule === true,
 );
+const queueSetupOpen = ref(false);
+const canSetPostingTimes = computed(
+    () => account.value !== null && canManageAccounts.value,
+);
+
+const closeQueueSetup = (): void => {
+    queueSetupOpen.value = false;
+};
+
+const openPostingTimes = (): void => {
+    if (account.value) {
+        router.visit(channelSettings.url(account.value.id));
+    }
+};
 
 const permalink = computed(() => props.post.platform_url ?? null);
 
@@ -864,42 +889,102 @@ defineExpose({ openDetails });
                         {{ $t('posts.approvals.revert') }}
                     </Button>
                     <template v-if="canCreatePost && tab === 'drafts'">
-                        <Button
-                            v-if="canQueue"
-                            variant="outline"
-                            :data-testid="`post-add-to-queue-${post.id}`"
-                            @click="addToQueue"
-                        >
-                            <IconListNumbers class="size-4" />
-                            {{ $t('posts.publish.actions.add_to_queue') }}
-                        </Button>
-                        <TooltipProvider v-else :delay-duration="200">
-                            <Tooltip>
-                                <TooltipTrigger as-child>
-                                    <span tabindex="0">
-                                        <Button
-                                            variant="outline"
-                                            disabled
-                                            :data-testid="`post-add-to-queue-${post.id}`"
-                                        >
-                                            <IconListNumbers class="size-4" />
-                                            {{
-                                                $t(
-                                                    'posts.publish.actions.add_to_queue',
-                                                )
-                                            }}
-                                        </Button>
-                                    </span>
-                                </TooltipTrigger>
-                                <TooltipContent>
+                        <Tooltip v-if="canQueue">
+                            <TooltipTrigger as-child>
+                                <Button
+                                    variant="outline"
+                                    :data-testid="`post-add-to-queue-${post.id}`"
+                                    @click="addToQueue"
+                                >
+                                    <IconListNumbers class="size-4" />
                                     {{
                                         $t(
-                                            'posts.publish.actions.add_to_queue_disabled',
+                                            'posts.publish.actions.add_to_queue',
                                         )
                                     }}
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                                :data-testid="`post-add-to-queue-tooltip-${post.id}`"
+                            >
+                                {{
+                                    $t(
+                                        'posts.publish.actions.add_to_queue_hint',
+                                    )
+                                }}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Popover
+                            v-else
+                            v-model:open="queueSetupOpen"
+                        >
+                            <PopoverTrigger as-child>
+                                <Button
+                                    variant="outline"
+                                    :data-testid="`post-add-to-queue-${post.id}`"
+                                >
+                                    <IconListNumbers class="size-4" />
+                                    {{
+                                        $t(
+                                            'posts.publish.actions.add_to_queue',
+                                        )
+                                    }}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                side="top"
+                                align="end"
+                                class="w-80 space-y-3"
+                                :data-testid="`post-queue-setup-${post.id}`"
+                            >
+                                <p class="text-sm font-semibold">
+                                    {{
+                                        $t(
+                                            'posts.publish.actions.queue_setup.title',
+                                        )
+                                    }}
+                                </p>
+                                <p class="text-sm text-muted-foreground">
+                                    {{
+                                        canSetPostingTimes
+                                            ? $t(
+                                                  'posts.publish.actions.queue_setup.body',
+                                              )
+                                            : $t(
+                                                  'posts.publish.actions.queue_setup.body_member',
+                                              )
+                                    }}
+                                </p>
+                                <div class="flex justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        :data-testid="`post-queue-setup-not-now-${post.id}`"
+                                        @click="closeQueueSetup"
+                                    >
+                                        <span data-single-line>{{
+                                            $t(
+                                                'posts.publish.actions.queue_setup.not_now',
+                                            )
+                                        }}</span>
+                                    </Button>
+                                    <Button
+                                        v-if="canSetPostingTimes"
+                                        type="button"
+                                        size="sm"
+                                        :data-testid="`post-queue-setup-action-${post.id}`"
+                                        @click="openPostingTimes"
+                                    >
+                                        <span data-single-line>{{
+                                            $t(
+                                                'posts.publish.actions.queue_setup.action',
+                                            )
+                                        }}</span>
+                                    </Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     </template>
                     <Tooltip v-if="permalink && platform">
                         <TooltipTrigger as-child>

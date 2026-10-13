@@ -145,7 +145,7 @@ test('a draft is added to the queue from the drafts tab', function () {
     $page->assertNoJavaScriptErrors();
 });
 
-test('add to queue is disabled for a draft whose channel has no posting times', function () {
+test('add to queue explains how to set up the queue when the channel has no posting times', function () {
     [$user, $workspace] = publishPageSetup();
     $channel = SocialAccount::factory()->linkedin()->create([
         'workspace_id' => $workspace->id,
@@ -158,9 +158,59 @@ test('add to queue is disabled for a draft whose channel has no posting times', 
     $page = visit(route('app.channels.publish', ['account' => $channel, 'tab' => 'drafts']));
     waitForPublishPageTestId($page, "post-add-to-queue-{$draft->id}");
 
-    $page->assertAttribute("@post-add-to-queue-{$draft->id}", 'disabled', '')
+    $page->assertEnabled("@post-add-to-queue-{$draft->id}")
+        ->click("@post-add-to-queue-{$draft->id}");
+    waitForPublishPageTestId($page, "post-queue-setup-{$draft->id}");
+
+    $page->assertSeeIn("@post-queue-setup-{$draft->id}", __('posts.publish.actions.queue_setup.title'))
+        ->assertSeeIn("@post-queue-setup-{$draft->id}", __('posts.publish.actions.queue_setup.body'))
         ->assertNoJavaScriptErrors();
     expect($draft->refresh()->status)->toBe(PostStatus::Draft);
+
+    $page->click("@post-queue-setup-action-{$draft->id}");
+    waitForPublishPageTestId($page, 'channel-settings-page');
+
+    $page->assertPathIs(parse_url(route('app.channels.settings', $channel), PHP_URL_PATH))
+        ->assertNoJavaScriptErrors();
+});
+
+test('a member who cannot manage channels is told to ask an admin for posting times', function () {
+    [$owner, $workspace] = publishPageSetup();
+    $member = User::factory()->create(['account_id' => $owner->account_id, 'current_workspace_id' => $workspace->id]);
+    $workspace->members()->attach($member->id, membershipPivot('member'));
+    $channel = SocialAccount::factory()->linkedin()->create([
+        'workspace_id' => $workspace->id,
+        'timezone' => 'UTC',
+        'posting_schedule' => null,
+    ]);
+    $draft = publishPagePost($owner, $workspace, $channel, ['status' => 'draft', 'queue' => null]);
+    $this->actingAs($member);
+
+    $page = visit(route('app.posts.index', ['tab' => 'drafts']));
+    waitForPublishPageTestId($page, "post-add-to-queue-{$draft->id}");
+    $page->click("@post-add-to-queue-{$draft->id}");
+    waitForPublishPageTestId($page, "post-queue-setup-{$draft->id}");
+
+    $page->assertSeeIn("@post-queue-setup-{$draft->id}", __('posts.publish.actions.queue_setup.body_member'))
+        ->assertMissing("@post-queue-setup-action-{$draft->id}")
+        ->click("@post-queue-setup-not-now-{$draft->id}");
+
+    $page->assertMissing("@post-queue-setup-{$draft->id}")
+        ->assertNoJavaScriptErrors();
+});
+
+test('add to queue explains where the post goes when the channel has posting times', function () {
+    [$user, $workspace, $channel] = publishPageSetup();
+    $draft = publishPagePost($user, $workspace, $channel, ['status' => 'draft', 'queue' => null]);
+    $this->actingAs($user);
+
+    $page = visit(route('app.channels.publish', ['account' => $channel, 'tab' => 'drafts']));
+    waitForPublishPageTestId($page, "post-add-to-queue-{$draft->id}");
+    $page->hover("@post-add-to-queue-{$draft->id}");
+    waitForPublishPageTestId($page, "post-add-to-queue-tooltip-{$draft->id}");
+
+    $page->assertSeeIn("@post-add-to-queue-tooltip-{$draft->id}", __('posts.publish.actions.add_to_queue_hint'))
+        ->assertNoJavaScriptErrors();
 });
 
 test('editing a draft from a channel page keeps the channel page and tab', function () {

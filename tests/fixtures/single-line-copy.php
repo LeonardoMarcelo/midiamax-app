@@ -125,6 +125,8 @@ return [
     'posts.list_view' => 6,
     'posts.publish.actions.add_to_queue' => 28,
     'posts.publish.actions.copy_link' => 19,
+    'posts.publish.actions.queue_setup.action' => 20,
+    'posts.publish.actions.queue_setup.not_now' => 11,
     'posts.publish.actions.share_link' => 29,
     'posts.publish.in_google_review' => 28,
     'settings.api_keys.description' => 42,
