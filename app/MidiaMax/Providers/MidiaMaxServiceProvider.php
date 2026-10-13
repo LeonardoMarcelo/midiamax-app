@@ -63,6 +63,14 @@ class MidiaMaxServiceProvider extends ServiceProvider
             \App\Http\Middleware\App\SetLocale::class,
             \App\MidiaMax\Http\Middleware\SetLocale::class,
         );
+
+        // Landing page em "/" para visitante. A rota "/" do upstream fica atras
+        // do auth e e carregada antes das nossas, entao este e o unico ponto de
+        // intervencao sem editar arquivo deles.
+        $this->app->bind(
+            \Illuminate\Auth\Middleware\Authenticate::class,
+            \App\MidiaMax\Http\Middleware\Authenticate::class,
+        );
     }
 
     /**
@@ -101,7 +109,11 @@ class MidiaMaxServiceProvider extends ServiceProvider
 
             $translator->addLines([
                 'billing.subscribe.prices.socials.monthly' => $labels['socials_monthly'],
+                'billing.subscribe.prices.socials.yearly' => $labels['socials_yearly'],
+                'billing.subscribe.prices.socials.yearly_per_month' => $labels['socials_yearly_per_month'],
                 'billing.subscribe.prices.workspaces.monthly' => $labels['workspaces_monthly'],
+                'billing.subscribe.prices.workspaces.yearly' => $labels['workspaces_yearly'],
+                'billing.subscribe.prices.workspaces.yearly_per_month' => $labels['workspaces_yearly_per_month'],
             ], $locale);
         }
     }

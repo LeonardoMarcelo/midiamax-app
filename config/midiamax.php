@@ -39,7 +39,11 @@ return [
 
     'billing_labels' => [
         'socials_monthly' => env('MIDIAMAX_PRICE_SOCIALS_MONTHLY', 'R$ 129,99'),
+        'socials_yearly' => env('MIDIAMAX_PRICE_SOCIALS_YEARLY', 'R$ 1.299,90'),
+        'socials_yearly_per_month' => env('MIDIAMAX_PRICE_SOCIALS_YEARLY_PER_MONTH', 'R$ 108,32'),
         'workspaces_monthly' => env('MIDIAMAX_PRICE_WORKSPACES_MONTHLY', 'R$ 369,99'),
+        'workspaces_yearly' => env('MIDIAMAX_PRICE_WORKSPACES_YEARLY', 'R$ 3.699,90'),
+        'workspaces_yearly_per_month' => env('MIDIAMAX_PRICE_WORKSPACES_YEARLY_PER_MONTH', 'R$ 308,32'),
     ],
 
     /*

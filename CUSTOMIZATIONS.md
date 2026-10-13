@@ -141,6 +141,29 @@ php artisan tinker --execute="app()->setLocale('pt-BR');
   echo __('billing.plans.monthly');"   # tem que sair 'Mensal', nao a chave
 ```
 
+### Landing page em `/` para visitante
+
+`App\MidiaMax\Http\Middleware\Authenticate` (bind sobre
+`Illuminate\Auth\Middleware\Authenticate`).
+
+O upstream não tem landing: a rota `/` dele fica atrás do `auth` e só redireciona
+para o calendário — o site de marketing do TryPost é outro projeto, fechado.
+Testado: uma rota nossa em `/` **nunca é alcançada**, porque as rotas do upstream
+são carregadas antes. Por isso a intervenção é no middleware, que é o ponto onde
+se decide o que fazer com o visitante.
+
+Comportamento verificado:
+
+| Quem | Em | Resultado |
+| --- | --- | --- |
+| visitante | `/` | landing, HTTP 200, sem redirect |
+| visitante | `/settings/profile` | 302 para `/login` (link profundo preservado) |
+| autenticado | `/` | 302 para `/schedule/calendar` |
+
+- **Conferir a cada release:** `git diff <base> <nova-tag> -- routes/app.php`
+  (se mudarem a rota `/`) e a assinatura de `Authenticate::handle()` do framework.
+- 121 testes de `tests/Feature/Auth` passando com o bind ativo.
+
 ## 5. Decisões que valem lembrar
 
 - **`release-docker.yml` do upstream foi mantido intocado.** Ele dispara em tags
