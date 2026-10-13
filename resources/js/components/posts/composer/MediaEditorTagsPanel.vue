@@ -107,6 +107,52 @@ const movingUsername = computed(() =>
                 >
             </div>
 
+            <form
+                v-if="pendingPoint"
+                class="space-y-2"
+                data-testid="media-editor-tag-form"
+                @submit.prevent="saveTag"
+            >
+                <div
+                    class="flex items-center gap-2 rounded-lg border border-border bg-background px-3"
+                    :class="invalid ? 'border-destructive' : ''"
+                >
+                    <IconAt class="size-4 shrink-0 text-muted-foreground" />
+                    <input
+                        ref="input"
+                        v-model="username"
+                        data-testid="media-editor-tag-username"
+                        class="h-9 w-full bg-transparent text-sm outline-none"
+                        autocomplete="off"
+                        :placeholder="
+                            $t('posts.composer.media_editor.tags_placeholder')
+                        "
+                        :aria-invalid="invalid"
+                        @input="clearInvalid"
+                    />
+                </div>
+                <p v-if="invalid" class="text-xs text-destructive">
+                    {{ $t('posts.composer.media_editor.tags_invalid') }}
+                </p>
+                <div class="flex justify-end gap-2">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        @click="clearPendingPoint"
+                    >
+                        {{ $t('posts.composer.media_editor.tags_cancel') }}
+                    </Button>
+                    <Button
+                        type="submit"
+                        size="sm"
+                        data-testid="media-editor-tag-save"
+                    >
+                        {{ $t('posts.composer.media_editor.tags_save') }}
+                    </Button>
+                </div>
+            </form>
+
             <ol
                 v-if="edit.userTags.length"
                 class="divide-y divide-border overflow-hidden rounded-lg border border-border"
@@ -192,51 +238,6 @@ const movingUsername = computed(() =>
             </p>
         </div>
 
-        <form
-            v-if="pendingPoint"
-            class="space-y-2"
-            data-testid="media-editor-tag-form"
-            @submit.prevent="saveTag"
-        >
-            <div
-                class="flex items-center gap-2 rounded-lg border border-border bg-background px-3"
-                :class="invalid ? 'border-destructive' : ''"
-            >
-                <IconAt class="size-4 shrink-0 text-muted-foreground" />
-                <input
-                    ref="input"
-                    v-model="username"
-                    data-testid="media-editor-tag-username"
-                    class="h-9 w-full bg-transparent text-sm outline-none"
-                    autocomplete="off"
-                    :placeholder="
-                        $t('posts.composer.media_editor.tags_placeholder')
-                    "
-                    :aria-invalid="invalid"
-                    @input="clearInvalid"
-                />
-            </div>
-            <p v-if="invalid" class="text-xs text-destructive">
-                {{ $t('posts.composer.media_editor.tags_invalid') }}
-            </p>
-            <div class="flex justify-end gap-2">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    @click="clearPendingPoint"
-                >
-                    {{ $t('posts.composer.media_editor.tags_cancel') }}
-                </Button>
-                <Button
-                    type="submit"
-                    size="sm"
-                    data-testid="media-editor-tag-save"
-                >
-                    {{ $t('posts.composer.media_editor.tags_save') }}
-                </Button>
-            </div>
-        </form>
 
         <div class="space-y-2">
             <Button
