@@ -893,7 +893,7 @@ test('post notes open after creation while the edit dialog still has its AI assi
     $page = visit(route('app.posts.index', ['notes' => $post->id, 'note' => $note->id]));
     $page->assertVisible("@post-notes-trigger-{$post->id}")
         ->assertSee('Please review the opening line');
-    expect($page->script("document.querySelector('[data-testid=\"post-notes-trigger-{$post->id}\"]').textContent.replace(/\\s+/g, ' ').trim()"))->toBe('1');
+    expect($page->script("document.querySelector('[data-testid=\"post-notes-trigger-{$post->id}\"]').textContent.replace(/\\s+/g, ' ').trim()"))->toBe(__('notes.title').' 1');
 
     $layout = $page->script(<<<'JS'
         (() => {

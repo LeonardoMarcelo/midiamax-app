@@ -807,18 +807,12 @@ defineExpose({ openDetails });
                     <CollapsibleTrigger v-if="showNotes" as-child>
                         <Button
                             variant="outline"
-                            size="icon"
-                            class="relative data-[state=open]:bg-accent"
-                            :aria-label="
-                                noteCount > 0
-                                    ? `${$t('notes.title')} (${noteCount})`
-                                    : $t('notes.title')
-                            "
+                            class="data-[state=open]:bg-accent"
                             :data-testid="`post-notes-trigger-${post.id}`"
                         >
                             <IconMessageCircleFilled
                                 v-if="noteCount > 0"
-                                class="size-4 text-foreground"
+                                class="size-4"
                                 :data-testid="`post-notes-filled-icon-${post.id}`"
                             />
                             <IconMessageCircle
@@ -826,9 +820,10 @@ defineExpose({ openDetails });
                                 class="size-4 text-muted-foreground"
                                 :data-testid="`post-notes-outline-icon-${post.id}`"
                             />
+                            {{ $t('notes.title') }}
                             <span
                                 v-if="noteCount > 0"
-                                class="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary-strong px-1 text-[10px] leading-none font-semibold text-primary-strong-foreground tabular-nums ring-2 ring-background"
+                                class="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-strong px-1.5 text-xs font-semibold text-primary-strong-foreground tabular-nums"
                                 :data-testid="`post-notes-count-${post.id}`"
                                 >{{ noteCount > 99 ? '99+' : noteCount }}</span
                             >
