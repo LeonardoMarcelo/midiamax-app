@@ -570,7 +570,8 @@ test('the instagram reel card adds collaborators and a checked trial reel, and a
     waitForChannelSettingsTestId($page, 'instagram-trial-reel-MANUAL');
     $page->click('@instagram-trial-reel-MANUAL');
     waitForChannelSettingsTestId($page, 'instagram-trial-reel-check');
-    $page->click('@instagram-trial-reel-check-no');
+    $page->assertVisible('@instagram-trial-reel-illustration')
+        ->click('@instagram-trial-reel-check-no');
     waitForChannelSettingsCondition($page, "!document.querySelector('[data-testid=\"instagram-trial-reel-check\"]')");
     $page->assertAttribute('@instagram-trial-reel-off', 'aria-checked', 'true')
         ->click('@instagram-trial-reel-MANUAL');
