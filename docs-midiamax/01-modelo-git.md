@@ -78,6 +78,21 @@ $this->app->bind(\App\Services\Publisher::class, \App\MidiaMax\Services\Publishe
 Se precisar só mudar um comportamento, estenda a classe do upstream em
 `app/MidiaMax/` e sobrescreva o método — assim as mudanças deles continuam chegando.
 
+**Funciona até para middleware**, que é o caso menos óbvio: o pipeline do Laravel
+resolve middleware pelo container, então dá para trocar a implementação sem tocar
+em `bootstrap/app.php`. Exemplo real já no repo: `SetLocale`
+(ver `CUSTOMIZATIONS.md`, seção 3).
+
+Verificar que um bind está de pé:
+
+```bash
+docker compose exec app php artisan tinker \
+  --execute="echo get_class(app(App\Http\Middleware\App\SetLocale::class));"
+```
+
+O preço do bind: ele **não avisa** quando a classe original muda. Todo bind entra
+em `CUSTOMIZATIONS.md` com o comando de `git diff` do arquivo a vigiar.
+
 ### Sobrescrever uma tradução do upstream
 
 Não edite `lang/pt-BR/*.php`. No `boot()` do provider:

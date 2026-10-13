@@ -62,12 +62,24 @@ echo "--- Commits ($(git rev-list --count "${BASE}..${TAG}")) ---"
 git log --oneline "${BASE}..${TAG}" | head -40
 echo
 echo "--- Mexeram em arquivo que NOS modificamos? (ver CUSTOMIZATIONS.md) ---"
-TOUCHED=(bootstrap/providers.php resources/css/app.css .gitattributes)
+TOUCHED=(bootstrap/providers.php resources/css/app.css .gitattributes README.md)
 if git diff --quiet "${BASE}" "${TAG}" -- "${TOUCHED[@]}"; then
     echo "  nenhum. Merge deve ser limpo."
 else
     git diff --stat "${BASE}" "${TAG}" -- "${TOUCHED[@]}" | sed 's/^/  /'
-    echo "  ^ conflito esperado nesses arquivos."
+    echo "  ^ conflito esperado nesses arquivos (README tem merge=ours, resolve sozinho)."
+fi
+echo
+echo "--- Mexeram em classe que NOS substituimos por bind? ---"
+# Bind nao gera conflito de merge: ele quebra em silencio. Por isso a checagem
+# e explicita. Manter em sincronia com CUSTOMIZATIONS.md secao 3.
+WATCHED=(app/Http/Middleware/App/SetLocale.php app/Enums/User/Locale.php)
+if git diff --quiet "${BASE}" "${TAG}" -- "${WATCHED[@]}"; then
+    echo "  nenhuma."
+else
+    git diff --stat "${BASE}" "${TAG}" -- "${WATCHED[@]}" | sed 's/^/  /'
+    echo "  ^ ATENCAO: nossa substituicao pode ter ficado desatualizada."
+    echo "    Revisar app/MidiaMax/Http/Middleware/SetLocale.php contra a nova versao."
 fi
 echo
 echo "--- Variaveis de ambiente novas (refletir no midiamax-infra) ---"

@@ -72,7 +72,29 @@ com crédito e sem sugerir vínculo.
 | `scripts/midiamax/**` | Automação de update e setup | — |
 | `.github/workflows/midiamax-*.yml` | CI nossa (check de upstream, build de imagem) | — |
 
-## 3. Decisões que valem lembrar
+## 3. Binds que substituem classes do upstream
+
+Zero linhas alteradas em arquivo do upstream — mas **bind não avisa quando a
+classe original muda**. Reconferir cada item a cada release.
+
+### `App\Http\Middleware\App\SetLocale` → `App\MidiaMax\Http\Middleware\SetLocale`
+
+O original usa `Auth::user()?->locale ?? Locale::DEFAULT`, e `Locale::DEFAULT` é
+`English` cravado em `app/Enums/User/Locale.php`. Consequência: visitante não
+autenticado vê login, cadastro, recuperação de senha e `/codigo-fonte` sempre em
+inglês, ignorando `APP_LOCALE`. Para um SaaS brasileiro isso é defeito de produto.
+
+A nossa versão usa `APP_LOCALE` como fallback de visitante; usuário autenticado
+continua mandando, igual ao upstream.
+
+Funciona porque o pipeline do Laravel resolve middleware pelo container, então
+`bootstrap/app.php` (que registra `SetLocale::class` no grupo `web`) fica intocado.
+
+- **Conferir a cada release:** `git diff <base> <nova-tag> -- app/Http/Middleware/App/SetLocale.php app/Enums/User/Locale.php`
+- **Verificar que o bind ainda vale:**
+  `php artisan tinker --execute="echo get_class(app(App\Http\Middleware\App\SetLocale::class));"`
+
+## 4. Decisões que valem lembrar
 
 - **`release-docker.yml` do upstream foi mantido intocado.** Ele dispara em tags
   `v*.*.*`; nossas tags são `mm-v*`, então ele nunca roda por acidente — desde que

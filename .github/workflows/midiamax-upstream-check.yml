@@ -61,9 +61,15 @@ jobs:
             git diff --stat "$BASE" "$TAG" | tail -1
             echo '```'
             echo
-            echo "### Arquivos do upstream que nos modificamos (CUSTOMIZATIONS.md)"
+            echo "### Arquivos do upstream que nos modificamos (CUSTOMIZATIONS.md secao 1)"
             echo '```'
-            git diff --stat "$BASE" "$TAG" -- bootstrap/providers.php resources/css/app.css .gitattributes || true
+            git diff --stat "$BASE" "$TAG" -- bootstrap/providers.php resources/css/app.css .gitattributes README.md || true
+            echo '```'
+            echo
+            echo "### Classes substituidas por bind (CUSTOMIZATIONS.md secao 3)"
+            echo "Bind nao da conflito de merge — quebra em silencio. Revisar se aparecer algo aqui."
+            echo '```'
+            git diff --stat "$BASE" "$TAG" -- app/Http/Middleware/App/SetLocale.php app/Enums/User/Locale.php || true
             echo '```'
             echo
             echo "### Variaveis de ambiente novas (refletir no midiamax-infra)"

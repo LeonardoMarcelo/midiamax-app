@@ -27,7 +27,23 @@ class MidiaMaxServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->overrideUpstreamImplementations();
+    }
+
+    /**
+     * Troca de implementacao do upstream sem editar o arquivo deles. Funciona
+     * inclusive para middleware: o pipeline do Laravel resolve middleware pelo
+     * container, entao bootstrap/app.php continua intocado.
+     *
+     * Toda entrada aqui tem que estar em CUSTOMIZATIONS.md e ser reconferida a
+     * cada release do upstream — bind nao avisa quando a classe original muda.
+     */
+    protected function overrideUpstreamImplementations(): void
+    {
+        $this->app->bind(
+            \App\Http\Middleware\App\SetLocale::class,
+            \App\MidiaMax\Http\Middleware\SetLocale::class,
+        );
     }
 
     /**
