@@ -48,7 +48,6 @@ const pageErrors = usePageErrors();
     <AuthBase
         :title="$t('auth.login.title')"
         :status="status"
-        panel
     >
         <Head :title="$t('auth.login.page_title')" />
 

@@ -104,6 +104,12 @@ Detalhes e checklist: `docs-midiamax/04-compliance-agpl.md`.
 - Desligue formatação automática (Prettier/format-on-save) para arquivos do upstream.
   O editor já reformatou `MEDIA_INTEGRATIONS_SETUP.md` uma vez e isso vira conflito
   de merge sem nenhum ganho. Se acontecer: `git checkout -- <arquivo>`.
+- **Nunca rodar `npm run build` com o Vite dev server no ar.** O plugin
+  `laravel-vue-i18n` gera `lang/php_<locale>.json` no `buildStart` e **apaga no
+  `buildEnd`** — mas o dev server lê esses arquivos em runtime. Um build de
+  produção deixa o app inteiro mostrando chave crua em vez de texto ("textos
+  bugados"). Em dev o Vite já recarrega sozinho; não precisa buildar.
+  Se acontecer: `docker compose restart app` regenera os 16 arquivos.
 - `.claude/settings*.json` e `compose.override.yaml` estão em `.git/info/exclude` —
   config pessoal não entra no diff. (`compose.override.yaml` **não** está no
   `.gitignore` do upstream, apesar do comentário no `.example` dizer que está.)

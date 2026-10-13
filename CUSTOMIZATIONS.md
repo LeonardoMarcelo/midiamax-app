@@ -236,6 +236,34 @@ e as nossas traduções vivem em `lang-midiamax/`.
 
 - **Conferir a cada release:** `git diff <base> <nova-tag> -- resources/js/pages/settings/account/Billing.vue`
 
+### Marca nas traduções e depoimentos de terceiros
+
+Havia **46 chaves com "TryPost" em cada um dos 16 idiomas** — 736 strings,
+incluindo `auth.login.title` ("Entrar no TryPost").
+
+Resolvido por **plugin de Vite nosso** (`resources/js/midiamax/vite-rebrand-i18n.ts`,
+registrado em `vite.config.ts` logo depois do `i18n()`): ele reescreve os
+`lang/php_<locale>.json` **gerados**, deixando os arquivos de idioma do upstream
+intocados. Troca acompanha sozinha qualquer string nova que eles criem — 16
+diretórios de idioma ficaram fora do nosso diff.
+
+Resultado medido: 736 → 16 ocorrências, todas em `auth.reviews.*`, excluídas de
+propósito.
+
+**Por que `auth.reviews.*` fica de fora:** são depoimentos de pessoas e empresas
+**reais** elogiando o TryPost (Paulo Dantas/chatadv.com.br, Diego/Globalfy.com,
+Pedro/templated.io…), com foto, mais um selo "5/5 no G2". Trocar a marca ali
+criaria endosso falso atribuído a gente identificável e uma nota de avaliação
+que a MidiaMax não tem.
+
+Por isso o painel que exibia esses depoimentos foi **removido** das telas de
+login e cadastro (`panel` deixou de ser passado em `pages/auth/Login.vue` e
+`Register.vue`; o layout já suporta coluna única). A exclusão no plugin é a
+segunda trava, caso alguém reative o painel.
+
+Quando houver depoimentos reais de clientes da MidiaMax, dá para reativar o
+`panel` e preencher `auth.reviews.*` pelo mesmo mecanismo de override.
+
 ## 5. Decisões que valem lembrar
 
 - **`release-docker.yml` do upstream foi mantido intocado.** Ele dispara em tags

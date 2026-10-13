@@ -52,7 +52,6 @@ const hasSocial = computed(
 <template>
     <AuthBase
         :title="$t('auth.register.title')"
-        panel
     >
         <Head :title="$t('auth.register.page_title')" />
 
