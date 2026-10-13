@@ -80,7 +80,8 @@ não conecta e não há erro no servidor — só no console do browser.
 ### Passport (tokens de API e MCP) — obrigatório
 
 ```bash
-docker compose -f compose.prod.yaml run --rm app php artisan passport:keys --show
+openssl genrsa -out oauth-private.key 4096
+openssl rsa -in oauth-private.key -pubout -out oauth-public.key
 ```
 
 `PASSPORT_PRIVATE_KEY` e `PASSPORT_PUBLIC_KEY`, com `\n` literal nas quebras de

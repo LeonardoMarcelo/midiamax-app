@@ -108,7 +108,8 @@ nenhum** — só aparece no console do browser.
 ## 5. Passport — tokens de API e MCP 🔴
 
 ```bash
-docker compose -f compose.prod.yaml run --rm app php artisan passport:keys --show
+openssl genrsa -out oauth-private.key 4096
+openssl rsa -in oauth-private.key -pubout -out oauth-public.key
 ```
 
 ```env
