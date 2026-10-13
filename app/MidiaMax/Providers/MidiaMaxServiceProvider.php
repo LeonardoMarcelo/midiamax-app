@@ -52,9 +52,20 @@ class MidiaMaxServiceProvider extends ServiceProvider
     /**
      * Rotas proprias em arquivo proprio. Carregadas depois das do upstream, o
      * que importa se o upstream tiver fallback/catch-all.
+     *
+     * O guard de routesAreCached() nao e opcional: o entrypoint da imagem roda
+     * `php artisan route:cache` em producao. Nossa rota entra no cache (o
+     * route:cache boota a app e passa por aqui), e sem o guard ela seria
+     * registrada de novo a cada request em cima do cache.
+     * E o mesmo guard que o loadRoutesFrom() do Laravel faz internamente — nao
+     * usamos ele aqui porque precisamos aplicar o middleware group "web".
      */
     protected function loadMidiaMaxRoutes(): void
     {
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
         Route::middleware('web')->group(base_path('routes/midiamax.php'));
     }
 
