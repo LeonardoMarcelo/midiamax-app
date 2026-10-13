@@ -7,6 +7,7 @@ return [
     'title' => 'Notas',
     'show' => 'Mostrar notas',
     'hide' => 'Ocultar notas',
+    'panel_hint' => 'Solo tu equipo ve estas notas.',
     'edit' => 'Editar',
     'delete' => 'Eliminar',
     'edited' => 'editado',

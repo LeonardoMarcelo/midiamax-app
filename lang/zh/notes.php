@@ -5,6 +5,7 @@ return [
     'title' => '备注',
     'show' => '显示备注',
     'hide' => '隐藏备注',
+    'panel_hint' => '只有你的团队能看到这些备注。',
     'edit' => '编辑',
     'delete' => '删除',
     'edited' => '已编辑',

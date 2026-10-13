@@ -85,11 +85,11 @@ const handleEditKeydown = (event: KeyboardEvent) => {
 <template>
     <div
         :data-note-id="note.id"
-        class="group/note relative flex gap-3 px-4 py-3 transition-colors"
+        class="group/note relative flex gap-3 rounded-lg px-2 py-2 transition-colors"
         :class="
             highlighted
                 ? 'bg-primary-subtle'
-                : 'hover:bg-muted/40 has-[[data-state=open]]:bg-muted/40'
+                : 'hover:bg-background/70 has-[[data-state=open]]:bg-background/70'
         "
         data-testid="note-item"
     >

@@ -5,6 +5,7 @@ return [
     'title' => 'Notatki',
     'show' => 'Pokaż notatki',
     'hide' => 'Ukryj notatki',
+    'panel_hint' => 'Te notatki widzi tylko Twój zespół.',
     'edit' => 'Edytuj',
     'delete' => 'Usuń',
     'edited' => 'edytowano',

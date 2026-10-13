@@ -7,6 +7,7 @@ return [
     'title' => 'Notizen',
     'show' => 'Notizen anzeigen',
     'hide' => 'Notizen ausblenden',
+    'panel_hint' => 'Nur dein Team sieht diese Notizen.',
     'edit' => 'Bearbeiten',
     'delete' => 'Löschen',
     'edited' => 'bearbeitet',

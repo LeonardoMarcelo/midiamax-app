@@ -5,6 +5,7 @@ return [
     'title' => 'Notities',
     'show' => 'Notities tonen',
     'hide' => 'Notities verbergen',
+    'panel_hint' => 'Alleen je team ziet deze notities.',
     'edit' => 'Bewerken',
     'delete' => 'Verwijderen',
     'edited' => 'bewerkt',

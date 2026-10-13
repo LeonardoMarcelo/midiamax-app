@@ -5,6 +5,7 @@ return [
     'title' => 'Notes',
     'show' => 'Afficher les notes',
     'hide' => 'Masquer les notes',
+    'panel_hint' => 'Seule votre équipe voit ces notes.',
     'edit' => 'Modifier',
     'delete' => 'Supprimer',
     'edited' => 'modifié',

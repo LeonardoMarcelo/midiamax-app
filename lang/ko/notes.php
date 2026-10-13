@@ -5,6 +5,7 @@ return [
     'title' => '메모',
     'show' => '메모 보기',
     'hide' => '메모 숨기기',
+    'panel_hint' => '이 메모는 팀원만 볼 수 있습니다.',
     'edit' => '편집',
     'delete' => '삭제',
     'edited' => '수정됨',

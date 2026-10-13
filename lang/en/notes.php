@@ -5,6 +5,7 @@ return [
     'title' => 'Notes',
     'show' => 'Show notes',
     'hide' => 'Hide notes',
+    'panel_hint' => 'Only your team sees these notes.',
     'edit' => 'Edit',
     'delete' => 'Delete',
     'edited' => 'edited',

@@ -7,6 +7,7 @@ return [
     'title' => 'Notlar',
     'show' => 'Notları göster',
     'hide' => 'Notları gizle',
+    'panel_hint' => 'Bu notları yalnızca ekibin görür.',
     'edit' => 'Düzenle',
     'delete' => 'Sil',
     'edited' => 'düzenlendi',

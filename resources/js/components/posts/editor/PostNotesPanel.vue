@@ -277,11 +277,11 @@ watch(
 
             <div
                 v-else-if="notes.length === 0"
-                class="flex flex-col items-center px-6 py-6 text-center"
+                class="flex flex-col items-center px-6 py-5 text-center"
                 data-testid="notes-empty"
             >
                 <div
-                    class="mb-3 flex size-9 items-center justify-center rounded-full bg-accent text-muted-foreground"
+                    class="mb-3 flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground"
                 >
                     <IconMessage class="size-4.5" stroke-width="1.75" />
                 </div>
@@ -293,7 +293,7 @@ watch(
                 </p>
             </div>
 
-            <ul v-else class="flex flex-col divide-y divide-border">
+            <ul v-else class="flex flex-col gap-1 px-2 py-2">
                 <li v-for="note in notes" :key="note.id">
                     <PostNoteItem
                         :note="note"
@@ -306,8 +306,8 @@ watch(
             </ul>
         </div>
 
-        <div class="shrink-0 border-t border-border p-3">
-            <InputGroup data-testid="note-composer">
+        <div class="shrink-0 px-4 pt-1 pb-4">
+            <InputGroup class="bg-card" data-testid="note-composer">
                 <InputGroupInput
                     ref="composerInput"
                     v-model="newBody"
