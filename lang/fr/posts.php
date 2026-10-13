@@ -361,6 +361,7 @@ return [
                 'audio_volume' => 'Musique',
                 'limited' => 'Les résultats sont limités et peuvent différer d\'Instagram.',
                 'search_failed' => 'Impossible de charger la musique d\'Instagram. Réessayez.',
+                'too_many_searches' => 'Trop de recherches de musique. Patientez une minute et réessayez.',
                 'requires_facebook' => 'La musique nécessite un compte Instagram connecté via Facebook.',
                 'link_title' => 'Connectez via Facebook pour publier des reels avec musique',
                 'link_body' => 'Pour publier des reels avec musique, liez Instagram à votre Page Facebook. Nous enregistrerons d\'abord votre publication en brouillon. Rouvrez-la ensuite depuis Brouillons pour ajouter la musique.',

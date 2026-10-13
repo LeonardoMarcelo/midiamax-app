@@ -361,6 +361,7 @@ return [
                 'audio_volume' => '音乐',
                 'limited' => '结果有限，可能与 Instagram 中的不同。',
                 'search_failed' => '无法加载 Instagram 音乐，请重试。',
+                'too_many_searches' => '音乐搜索次数过多。请等待一分钟后重试。',
                 'requires_facebook' => '音乐需要通过 Facebook 连接的 Instagram 账号。',
                 'link_title' => '通过 Facebook 连接以发布带音乐的 Reels',
                 'link_body' => '要发布带音乐的 Instagram Reels，请将 Instagram 关联到你的 Facebook 公共主页。关联前我们会先把帖子保存为草稿。之后从草稿中打开它来添加音乐。',

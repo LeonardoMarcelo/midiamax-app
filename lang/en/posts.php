@@ -361,6 +361,7 @@ return [
                 'audio_volume' => 'Music',
                 'limited' => 'Results are limited and may differ from Instagram.',
                 'search_failed' => 'Couldn\'t load music from Instagram. Try again.',
+                'too_many_searches' => 'Too many music searches. Wait a minute and try again.',
                 'requires_facebook' => 'Music needs an Instagram account connected through Facebook.',
                 'link_title' => 'Connect through Facebook to publish reels with music',
                 'link_body' => 'To publish Instagram reels with music, link Instagram to your Facebook Page. We\'ll save your post as a draft before linking. Reopen it from Drafts afterward to add music.',

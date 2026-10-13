@@ -14,7 +14,10 @@ import {
 } from '@tabler/icons-vue';
 import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue';
 
-import { index as audioIndex } from '@/actions/App/Http/Controllers/App/InstagramAudioController';
+import {
+    index as audioIndex,
+    show as audioShow,
+} from '@/actions/App/Http/Controllers/App/InstagramAudioController';
 import InputError from '@/components/InputError.vue';
 import SettingsRow from '@/components/posts/editor/SettingsRow.vue';
 import SettingsSection from '@/components/posts/editor/SettingsSection.vue';
@@ -144,6 +147,10 @@ const musicQuery = ref('');
 const tracks = ref<InstagramAudio[]>([]);
 const tracksLoading = ref(false);
 const tracksFailed = ref(false);
+const tracksLimited = ref(false);
+
+const isRateLimited = (error: unknown): boolean =>
+    (error as { response?: { status?: number } })?.response?.status === 429;
 const audioHttp = useHttp<Record<string, never>, InstagramAudio[]>();
 
 let latestSearch = 0;
@@ -152,6 +159,7 @@ const loadTracks = async (): Promise<void> => {
     const search = ++latestSearch;
     tracksLoading.value = true;
     tracksFailed.value = false;
+    tracksLimited.value = false;
 
     try {
         const query = musicQuery.value.trim();
@@ -162,10 +170,11 @@ const loadTracks = async (): Promise<void> => {
         );
         if (search !== latestSearch) return;
         tracks.value = found;
-    } catch {
+    } catch (error) {
         if (search !== latestSearch) return;
         tracks.value = [];
         tracksFailed.value = true;
+        tracksLimited.value = isRateLimited(error);
     } finally {
         if (search === latestSearch) tracksLoading.value = false;
     }
@@ -184,6 +193,40 @@ const isUsable = (url: string | null | undefined): url is string =>
     Boolean(url) && !brokenUrls.value.has(url as string);
 const markBroken = (url: string | null | undefined): void => {
     if (url) brokenUrls.value = new Set([...brokenUrls.value, url]);
+};
+
+const audioDetailsHttp = useHttp<Record<string, never>, InstagramAudio>();
+const refreshedAudioIds = new Set<string>();
+
+const refreshSelectedAudio = async (): Promise<boolean> => {
+    const audio = selectedAudio.value;
+    if (!audio || musicNeedsFacebook.value || refreshedAudioIds.has(audio.id)) {
+        return false;
+    }
+    refreshedAudioIds.add(audio.id);
+
+    try {
+        const fresh = await audioDetailsHttp.get(
+            audioShow.url({ account: props.accountId, audioId: audio.id }),
+        );
+        updateMeta({
+            audio: {
+                ...audio,
+                cover_url: fresh.cover_url,
+                preview_url: fresh.preview_url,
+            },
+        });
+
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+const onSelectedLinkBroken = (url: string | null | undefined): void => {
+    void refreshSelectedAudio().then((refreshed) => {
+        if (!refreshed) markBroken(url);
+    });
 };
 const playingId = soundtrack.playingAudioId;
 
@@ -208,7 +251,10 @@ const togglePreview = (track: InstagramAudio): void => {
         track.id,
         track.preview_url,
         track.audio_volume ?? 100,
-        () => markBroken(track.preview_url),
+        () =>
+            track.id === selectedAudio.value?.id
+                ? onSelectedLinkBroken(track.preview_url)
+                : markBroken(track.preview_url),
     );
 };
 
@@ -430,7 +476,7 @@ onUnmounted(() => {
                             alt=""
                             class="absolute inset-0 size-full object-cover"
                             data-testid="instagram-music-selected-cover"
-                            @error="markBroken(selectedAudio.cover_url)"
+                            @error="onSelectedLinkBroken(selectedAudio.cover_url)"
                         />
                         <IconMusic
                             v-else
@@ -606,7 +652,13 @@ onUnmounted(() => {
                                 class="px-2 py-4 text-sm text-destructive"
                                 data-testid="instagram-music-failed"
                             >
-                                {{ $t('posts.form.instagram.music.search_failed') }}
+                                {{
+                                    $t(
+                                        tracksLimited
+                                            ? 'posts.form.instagram.music.too_many_searches'
+                                            : 'posts.form.instagram.music.search_failed',
+                                    )
+                                }}
                             </p>
                             <p
                                 v-else-if="tracks.length === 0"

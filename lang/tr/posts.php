@@ -363,6 +363,7 @@ return [
                 'audio_volume' => 'Müzik',
                 'limited' => 'Sonuçlar sınırlıdır ve Instagram\'dan farklı olabilir.',
                 'search_failed' => 'Instagram müzikleri yüklenemedi. Tekrar dene.',
+                'too_many_searches' => 'Çok fazla müzik araması yapıldı. Bir dakika bekleyip tekrar dene.',
                 'requires_facebook' => 'Müzik için Facebook üzerinden bağlanmış bir Instagram hesabı gerekir.',
                 'link_title' => 'Müzikli Reels yayınlamak için Facebook ile bağlan',
                 'link_body' => 'Müzikli Reels yayınlamak için Instagram\'ı Facebook Sayfana bağla. Önce gönderini taslak olarak kaydedeceğiz. Ardından müzik eklemek için Taslaklar\'dan aç.',

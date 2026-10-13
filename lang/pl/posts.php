@@ -361,6 +361,7 @@ return [
                 'audio_volume' => 'Muzyka',
                 'limited' => 'Wyniki są ograniczone i mogą różnić się od Instagrama.',
                 'search_failed' => 'Nie udało się wczytać muzyki z Instagrama. Spróbuj ponownie.',
+                'too_many_searches' => 'Zbyt wiele wyszukiwań muzyki. Odczekaj minutę i spróbuj ponownie.',
                 'requires_facebook' => 'Muzyka wymaga konta Instagram połączonego przez Facebooka.',
                 'link_title' => 'Połącz przez Facebooka, aby publikować rolki z muzyką',
                 'link_body' => 'Aby publikować rolki z muzyką, połącz Instagram ze swoją stroną na Facebooku. Najpierw zapiszemy post jako wersję roboczą. Potem otwórz go w Wersjach roboczych, aby dodać muzykę.',

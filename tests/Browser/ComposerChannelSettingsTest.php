@@ -643,11 +643,37 @@ test('an invalid collaborator in any position shows its error', function () {
     expect(data_get($post->fresh()->meta, 'collaborators'))->toBeNull();
 });
 
-test('a picked track whose cover link expired shows the music icon instead', function () {
+test('a picked track whose cover link expired gets a fresh cover from instagram', function () {
+    $freshCover = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    Http::fake([config('trypost.platforms.instagram-facebook.graph_api').'/846373660299207*' => Http::response([
+        'audio_id' => '846373660299207',
+        'title' => 'Summer Song',
+        'audio_type' => 'music',
+        'cover_artwork_thumbnail_url' => $freshCover,
+    ])]);
     fakeChannelSettingsApis();
     $post = seedChannelSettingsPost(Platform::InstagramFacebook, ContentType::InstagramReel);
     $post->update(['meta' => ['audio' => [
-        'id' => 'audio-1',
+        'id' => '846373660299207',
+        'title' => 'Summer Song',
+        'cover_url' => 'http://127.0.0.1:9/expired-cover.jpg',
+        'preview_url' => null,
+    ]]]);
+
+    $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
+    waitForChannelSettingsTestId($page, 'instagram-music-selected');
+    waitForChannelSettingsCondition($page, "document.querySelector('[data-testid=\"instagram-music-selected-cover\"]')?.getAttribute('src')?.startsWith('data:image/gif')");
+
+    expect($page->script("document.querySelector('[data-testid=\"instagram-music-selected-cover\"]')?.getAttribute('src')"))->toBe($freshCover);
+    $page->assertNoJavaScriptErrors();
+});
+
+test('a picked track whose cover cannot be refreshed shows the music icon instead', function () {
+    Http::fake([config('trypost.platforms.instagram-facebook.graph_api').'/846373660299207*' => Http::response(['error' => ['code' => 100]], 400)]);
+    fakeChannelSettingsApis();
+    $post = seedChannelSettingsPost(Platform::InstagramFacebook, ContentType::InstagramReel);
+    $post->update(['meta' => ['audio' => [
+        'id' => '846373660299207',
         'title' => 'Summer Song',
         'cover_url' => 'http://127.0.0.1:9/expired-cover.jpg',
         'preview_url' => null,
@@ -658,8 +684,7 @@ test('a picked track whose cover link expired shows the music icon instead', fun
     waitForChannelSettingsCondition($page, "!document.querySelector('[data-testid=\"instagram-music-selected-cover\"]')");
 
     $page->assertMissing('@instagram-music-selected-cover')
-        ->assertSeeIn('@instagram-music-selected', 'Summer Song')
-        ->assertNoJavaScriptErrors();
+        ->assertSeeIn('@instagram-music-selected', 'Summer Song');
 });
 
 test('the instagram reel card picks music for an account connected through Facebook', function () {

@@ -361,6 +361,7 @@ return [
                 'audio_volume' => '음악',
                 'limited' => '결과가 제한적이며 Instagram과 다를 수 있습니다.',
                 'search_failed' => 'Instagram 음악을 불러오지 못했습니다. 다시 시도하세요.',
+                'too_many_searches' => '음악 검색이 너무 많습니다. 1분 후에 다시 시도하세요.',
                 'requires_facebook' => '음악을 쓰려면 Facebook으로 연결된 Instagram 계정이 필요합니다.',
                 'link_title' => '음악이 있는 릴스를 게시하려면 Facebook으로 연결하세요',
                 'link_body' => '음악이 있는 릴스를 게시하려면 Instagram을 Facebook 페이지에 연결하세요. 연결 전에 게시물을 임시저장합니다. 그다음 임시저장에서 열어 음악을 추가하세요.',

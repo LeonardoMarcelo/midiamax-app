@@ -6,23 +6,29 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\Post\Queue\ListFreeQueueSlots;
 use App\Actions\SocialAccount\CreatePinterestBoard;
+use App\Actions\SocialAccount\GetInstagramAudio;
 use App\Actions\SocialAccount\ListDiscordChannels;
 use App\Actions\SocialAccount\ListPinterestBoards;
+use App\Actions\SocialAccount\SearchInstagramAudio;
 use App\Enums\SocialAccount\Platform;
 use App\Exceptions\PlatformUnavailableException;
 use App\Exceptions\Social\ErrorCategory;
 use App\Exceptions\Social\PinterestPublishException;
 use App\Exceptions\TokenExpiredException;
+use App\Http\Requests\Api\SocialAccount\IndexInstagramAudioRequest;
 use App\Http\Requests\Api\SocialAccount\StorePinterestBoardRequest;
 use App\Http\Resources\Api\ChannelFreeSlotsResource;
 use App\Http\Resources\Api\ChannelPostingScheduleResource;
+use App\Http\Resources\Api\InstagramAudioResource;
 use App\Http\Resources\Api\PinterestBoardResource;
 use App\Http\Resources\Api\SocialAccountResource;
 use App\Http\Resources\Api\TikTokCreatorInfoResource;
 use App\Models\SocialAccount;
 use App\Services\Social\TikTokCreatorInfo;
 use App\Support\Social\PinterestBoardFailure;
+use Closure;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -95,6 +101,56 @@ class SocialAccountController extends Controller
         } catch (PlatformUnavailableException $e) {
             return response()->json(
                 ['message' => $e->getMessage()],
+                Response::HTTP_BAD_GATEWAY,
+            );
+        }
+    }
+
+    public function instagramAudio(IndexInstagramAudioRequest $request, SocialAccount $account): JsonResponse|AnonymousResourceCollection
+    {
+        return $this->instagramAudioLookup($account, fn (): AnonymousResourceCollection => InstagramAudioResource::collection(
+            SearchInstagramAudio::execute($account, $request->validated('q'), $request->validated('type')),
+        ));
+    }
+
+    public function instagramAudioShow(SocialAccount $account, string $audioId): JsonResponse|InstagramAudioResource
+    {
+        return $this->instagramAudioLookup($account, function () use ($account, $audioId): InstagramAudioResource {
+            abort_unless(ctype_digit($audioId), Response::HTTP_NOT_FOUND);
+
+            return new InstagramAudioResource(GetInstagramAudio::execute($account, $audioId));
+        });
+    }
+
+    /**
+     * @template T
+     *
+     * @param  Closure(): T  $lookup
+     * @return T|JsonResponse
+     */
+    private function instagramAudioLookup(SocialAccount $account, Closure $lookup): mixed
+    {
+        $this->authorize('view', $account);
+
+        if (! in_array($account->platform, [Platform::Instagram, Platform::InstagramFacebook], true)) {
+            return response()->json(
+                ['message' => 'Instagram audio is only available for Instagram accounts.'],
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            );
+        }
+
+        if ($account->platform !== Platform::InstagramFacebook) {
+            return response()->json(
+                ['message' => __('posts.form.instagram.music.requires_facebook')],
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            );
+        }
+
+        try {
+            return $lookup();
+        } catch (ConnectionException|RequestException) {
+            return response()->json(
+                ['message' => __('posts.form.instagram.music.search_failed')],
                 Response::HTTP_BAD_GATEWAY,
             );
         }

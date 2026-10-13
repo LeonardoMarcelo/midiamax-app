@@ -361,6 +361,7 @@ return [
                 'audio_volume' => 'Muziek',
                 'limited' => 'De resultaten zijn beperkt en kunnen afwijken van Instagram.',
                 'search_failed' => 'Kan muziek van Instagram niet laden. Probeer het opnieuw.',
+                'too_many_searches' => 'Te veel zoekopdrachten naar muziek. Wacht een minuut en probeer het opnieuw.',
                 'requires_facebook' => 'Muziek vereist een Instagram-account dat via Facebook is gekoppeld.',
                 'link_title' => 'Koppel via Facebook om reels met muziek te plaatsen',
                 'link_body' => 'Om reels met muziek te plaatsen, koppel je Instagram aan je Facebook-pagina. We slaan je bericht eerst op als concept. Open het daarna via Concepten om muziek toe te voegen.',

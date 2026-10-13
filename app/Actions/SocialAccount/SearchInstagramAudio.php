@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Actions\SocialAccount;
 
 use App\Models\SocialAccount;
+use App\Support\Social\InstagramAudio;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -17,35 +19,56 @@ use Illuminate\Support\Str;
 /**
  * Audio an Instagram account connected through Facebook may attach to a reel,
  * read from the Instagram Audio API, which lists them under `audio`: music
- * then original sounds, trending or matching a search.
+ * then original sounds (or one of the two catalogues), trending or matching a
+ * search. Each answer is kept for ten minutes per account, catalogue and query.
  *
  * @see https://developers.facebook.com/docs/instagram-platform/content-publishing/audio-api/
  */
 class SearchInstagramAudio
 {
-    private const array AUDIO_TYPES = ['music', 'original_sound'];
-
     /** Original sounds per search whose creator picture is looked up. */
     private const int PICTURE_LOOKUPS = 10;
 
     /**
-     * @return list<array{id: string, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
+     * @param  'music'|'original_sound'|null  $type  one catalogue, or both when null
+     * @return list<array{id: string, type: string|null, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
+     *
+     * @throws ConnectionException
+     * @throws RequestException
+     * @throws ThrottleRequestsException
+     */
+    public static function execute(SocialAccount $account, ?string $query = null, ?string $type = null): array
+    {
+        $query = Str::squish((string) $query);
+        $types = $type === null ? InstagramAudio::TYPES : [$type];
+        $cacheKey = 'instagram:audio-search:'.$account->id.':'.($type ?? 'all').':'.md5(Str::lower($query));
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($account, $query, $types): array {
+            InstagramAudio::spend($account);
+
+            return self::search($account, $query, $types);
+        });
+    }
+
+    /**
+     * @param  list<string>  $types
+     * @return list<array{id: string, type: string|null, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function execute(SocialAccount $account, ?string $query = null): array
+    private static function search(SocialAccount $account, string $query, array $types): array
     {
         $url = "{$account->platform->instagramGraphBaseUrl()}/ig_audio";
 
-        $responses = Http::pool(fn (Pool $pool): array => collect(self::AUDIO_TYPES)
+        $responses = Http::pool(fn (Pool $pool): array => collect($types)
             ->map(fn (string $type) => $pool->as($type)
                 ->connectTimeout(3)
                 ->timeout(8)
                 ->get($url, array_filter([
                     'audio_type' => $type,
                     'user_id' => $account->platform_user_id,
-                    'search_query' => filled($query) ? $query : null,
+                    'search_query' => $query !== '' ? $query : null,
                     'access_token' => $account->access_token,
                 ])))
             ->all());
@@ -59,10 +82,10 @@ class SearchInstagramAudio
         }
 
         $tracks = fn (string $type): Collection => Collection::make((array) data_get($succeeded->get($type)?->json(), 'audio', []))
-            ->map(fn (mixed $track): array => self::present($track))
+            ->map(fn (mixed $track): array => InstagramAudio::present($track))
             ->filter(fn (array $track): bool => $track['id'] !== '');
 
-        $music = blank($query)
+        $music = $query === ''
             ? $tracks('music')
             : $tracks('music')->filter(fn (array $track): bool => self::matches($track, $query));
 
@@ -79,8 +102,8 @@ class SearchInstagramAudio
      * Only the first few are looked up, together; a picture is kept for a few
      * hours, as its URL expires, and a failed lookup for a few minutes.
      *
-     * @param  Collection<int, array{id: string, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>  $sounds
-     * @return Collection<int, array{id: string, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
+     * @param  Collection<int, array{id: string, type: string|null, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>  $sounds
+     * @return Collection<int, array{id: string, type: string|null, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}>
      */
     private static function withCreatorPictures(SocialAccount $account, Collection $sounds): Collection
     {
@@ -136,25 +159,5 @@ class SearchInstagramAudio
         return collect(preg_split('/\s+/', Str::lower(Str::ascii($query))) ?: [])
             ->filter()
             ->every(fn (string $word): bool => str_contains($haystack, $word));
-    }
-
-    /**
-     * @return array{id: string, title: string, artist: string|null, cover_url: string|null, duration_ms: int|null, preview_url: string|null}
-     */
-    private static function present(mixed $track): array
-    {
-        $duration = data_get($track, 'duration_in_ms');
-        $username = data_get($track, 'ig_username');
-
-        return [
-            'id' => (string) data_get($track, 'audio_id', data_get($track, 'id', '')),
-            'title' => (string) data_get($track, 'title', ''),
-            'artist' => data_get($track, 'display_artist') ?? (filled($username) ? (string) $username : null),
-            'cover_url' => data_get($track, 'cover_artwork_thumbnail_uri')
-                ?? data_get($track, 'cover_artwork_thumbnail_url')
-                ?? data_get($track, 'profile_picture_url'),
-            'duration_ms' => is_numeric($duration) ? (int) $duration : null,
-            'preview_url' => data_get($track, 'download_url'),
-        ];
     }
 }

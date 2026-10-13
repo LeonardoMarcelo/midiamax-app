@@ -361,6 +361,7 @@ return [
                 'audio_volume' => '音楽',
                 'limited' => '結果は限られており、Instagramと異なる場合があります。',
                 'search_failed' => 'Instagramの音楽を読み込めませんでした。もう一度お試しください。',
+                'too_many_searches' => '音楽の検索が多すぎます。1分待ってからもう一度お試しください。',
                 'requires_facebook' => '音楽にはFacebook経由で接続したInstagramアカウントが必要です。',
                 'link_title' => '音楽付きリールを投稿するにはFacebook経由で接続',
                 'link_body' => '音楽付きのリールを投稿するには、InstagramをFacebookページにリンクしてください。リンクの前に投稿を下書きとして保存します。その後、下書きから開いて音楽を追加してください。',

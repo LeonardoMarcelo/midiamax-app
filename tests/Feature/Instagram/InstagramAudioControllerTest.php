@@ -6,6 +6,7 @@ use App\Enums\SocialAccount\Platform;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Social\InstagramAudio;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -44,6 +45,7 @@ test('searches instagram music for an account connected through facebook', funct
         ->assertOk()
         ->assertExactJson([[
             'id' => 'audio-1',
+            'type' => 'music',
             'title' => 'Song',
             'artist' => 'Band',
             'cover_url' => 'https://example.com/cover.jpg',
@@ -75,6 +77,7 @@ test('lists original sounds by their creator when music is unavailable', functio
         ->assertOk()
         ->assertExactJson([[
             'id' => 'sound-1',
+            'type' => null,
             'title' => 'Original audio',
             'artist' => 'creator',
             'cover_url' => 'https://example.com/creator.jpg',
@@ -103,15 +106,93 @@ test('reports a failed instagram music search', function () {
         ->assertJsonValidationErrors(['q' => __('posts.form.instagram.music.search_failed')]);
 });
 
-test('offers no music to an instagram account connected without facebook', function () {
+test('asks an instagram account connected without facebook to link it', function () {
     $instagram = SocialAccount::factory()->instagram()->create(['workspace_id' => $this->workspace->id]);
     Http::fake();
 
     $this->actingAs($this->user)
         ->getJson(route('app.instagram.audio.index', $instagram))
-        ->assertNotFound();
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['q' => __('posts.form.instagram.music.requires_facebook')]);
 
     Http::assertNothingSent();
+});
+
+test('offers no audio to an account of another network', function () {
+    $linkedIn = SocialAccount::factory()->create(['workspace_id' => $this->workspace->id, 'platform' => Platform::LinkedIn]);
+    Http::fake();
+
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', $linkedIn))->assertNotFound();
+
+    Http::assertNothingSent();
+});
+
+test('serves a repeated search from the cache', function () {
+    Http::fake(["{$this->graph}/ig_audio*" => Http::response(['audio' => [['audio_id' => 'music-1', 'title' => 'Track', 'audio_type' => 'music']]])]);
+
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => ' Track ']))->assertOk();
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'track']))
+        ->assertOk()
+        ->assertJsonPath('0.id', 'music-1')
+        ->assertJsonPath('0.type', 'music');
+
+    Http::assertSentCount(2);
+});
+
+test('searches one catalogue when a type is given', function () {
+    Http::fake(["{$this->graph}/ig_audio*" => Http::response(['audio' => []])]);
+
+    $this->actingAs($this->user)
+        ->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'type' => 'music']))
+        ->assertOk();
+
+    Http::assertSentCount(1);
+    Http::assertSent(fn (Request $request): bool => $request['audio_type'] === 'music');
+});
+
+test('returns one audio asset with fresh links and keeps it for an hour', function () {
+    Http::fake(["{$this->graph}/846373660299207*" => Http::response([
+        'audio_id' => '846373660299207',
+        'title' => 'Grudge',
+        'display_artist' => 'Tash',
+        'audio_type' => 'music',
+        'duration_in_ms' => 15000,
+        'cover_artwork_thumbnail_url' => 'https://example.com/fresh-cover.jpg',
+        'download_url' => 'https://example.com/fresh-preview.mp4',
+    ])]);
+
+    foreach (range(1, 2) as $attempt) {
+        $this->actingAs($this->user)
+            ->getJson(route('app.instagram.audio.show', [$this->account, '846373660299207']))
+            ->assertOk()
+            ->assertExactJson([
+                'id' => '846373660299207',
+                'type' => 'music',
+                'title' => 'Grudge',
+                'artist' => 'Tash',
+                'cover_url' => 'https://example.com/fresh-cover.jpg',
+                'duration_ms' => 15000,
+                'preview_url' => 'https://example.com/fresh-preview.mp4',
+            ]);
+    }
+
+    Http::assertSentCount(1);
+});
+
+test('refuses lookups past the workspace allowance without calling instagram', function () {
+    Http::fake(["{$this->graph}/*" => Http::response(['audio' => []])]);
+
+    foreach (range(1, InstagramAudio::LOOKUPS_PER_MINUTE) as $lookup) {
+        $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => "song {$lookup}"]))->assertOk();
+    }
+
+    $this->actingAs($this->user)
+        ->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'one more']))
+        ->assertTooManyRequests()
+        ->assertJsonPath('name', 'rate_limit_exceeded')
+        ->assertHeader('Retry-After');
+
+    Http::assertSentCount(InstagramAudio::LOOKUPS_PER_MINUTE * 2);
 });
 
 test('hides an account from another workspace', function () {
@@ -162,7 +243,7 @@ test('an original sound shows its creator picture as the cover', function () {
         ->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => '50 cent']))
         ->assertJsonPath('0.cover_url', 'https://example.com/leveviolao.jpg');
 
-    Http::assertSentCount(5);
+    Http::assertSentCount(3);
 });
 
 test('looks up creator pictures for the first ten original sounds and remembers a failed lookup', function () {
@@ -175,7 +256,7 @@ test('looks up creator pictures for the first ten original sounds and remembers 
     ]);
 
     $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'sound']))->assertOk();
-    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'sound']))->assertOk();
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', ['account' => $this->account, 'q' => 'sound again']))->assertOk();
 
     Http::assertSentCount(2 + 10 + 2);
 });

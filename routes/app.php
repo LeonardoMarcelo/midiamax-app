@@ -181,8 +181,9 @@ Route::middleware(['auth', EnsureAccountReady::class, EnsureHasWorkspace::class]
         ->name('app.discord.mentions');
 
     Route::get('instagram/accounts/{account}/audio', [InstagramAudioController::class, 'index'])
-        ->middleware('throttle:60,1')
         ->name('app.instagram.audio.index');
+    Route::get('instagram/accounts/{account}/audio/{audioId}', [InstagramAudioController::class, 'show'])
+        ->name('app.instagram.audio.show');
 
     Route::get('pinterest/accounts/{account}/boards', [PinterestBoardController::class, 'index'])
         ->middleware('throttle:30,1')

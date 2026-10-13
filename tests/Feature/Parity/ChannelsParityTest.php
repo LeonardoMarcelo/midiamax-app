@@ -6,9 +6,11 @@ use App\Enums\SocialAccount\Platform;
 use App\Exceptions\PlatformUnavailableException;
 use App\Mcp\Servers\TryPostServer;
 use App\Mcp\Tools\SocialAccount\CreatePinterestBoardTool;
+use App\Mcp\Tools\SocialAccount\GetInstagramAudioTool;
 use App\Mcp\Tools\SocialAccount\ListDiscordChannelsTool;
 use App\Mcp\Tools\SocialAccount\ListPinterestBoardsTool;
 use App\Mcp\Tools\SocialAccount\ListSocialAccountsTool;
+use App\Mcp\Tools\SocialAccount\SearchInstagramAudioTool;
 use App\Models\SocialAccount;
 use App\Models\Workspace;
 use App\Services\Social\Discord\DiscordClient;
@@ -40,14 +42,14 @@ test('listing channels returns the same accounts on the api and mcp, including t
         ->and(collect($api)->firstWhere('id', $first->id)['timezone'])->toBe('America/Sao_Paulo');
 });
 
-test('the api exposes exactly the channel list, boards, discord channels, insights, posting schedule and queue routes', function () {
+test('the api exposes exactly the channel list, boards, instagram audio, discord channels, insights, posting schedule and queue routes', function () {
     $apiChannelRoutes = collect(Route::getRoutes()->getRoutesByName())
         ->keys()
         ->filter(fn (string $name): bool => str_starts_with($name, 'api.social-accounts') || str_starts_with($name, 'api.channels'))
         ->values()
         ->all();
 
-    expect($apiChannelRoutes)->toEqual(['api.social-accounts.index', 'api.social-accounts.boards', 'api.social-accounts.boards.store', 'api.social-accounts.tiktok-creator-info', 'api.social-accounts.channels', 'api.channels.insights.show', 'api.channels.insights.publications', 'api.channels.posting-schedule.show', 'api.channels.posting-schedule.update', 'api.channels.posting-schedule.generate', 'api.channels.posting-schedule.copy', 'api.channels.queue.slots', 'api.channels.queue.order', 'api.channels.queue.slot'])
+    expect($apiChannelRoutes)->toEqual(['api.social-accounts.index', 'api.social-accounts.boards', 'api.social-accounts.boards.store', 'api.social-accounts.tiktok-creator-info', 'api.social-accounts.instagram-audio', 'api.social-accounts.instagram-audio.show', 'api.social-accounts.channels', 'api.channels.insights.show', 'api.channels.insights.publications', 'api.channels.posting-schedule.show', 'api.channels.posting-schedule.update', 'api.channels.posting-schedule.generate', 'api.channels.posting-schedule.copy', 'api.channels.queue.slots', 'api.channels.queue.order', 'api.channels.queue.slot'])
         ->and(Route::has('app.channels.disconnect'))->toBeTrue()
         ->and(Route::has('app.channels.posting-schedule.update'))->toBeTrue()
         ->and(Route::has('app.channels.reorder'))->toBeTrue();
@@ -167,4 +169,48 @@ test('pinterest board creation refuses the same names and accounts on the web, a
     TryPostServer::actingAs($this->user)->tool(CreatePinterestBoardTool::class, ['account_id' => $foreign->id, 'name' => 'Ideas'])->assertHasErrors(['Social account not found.']);
 
     Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/boards'));
+});
+
+test('instagram audio search and details return the same tracks on the web, api and mcp', function () {
+    $graph = config('trypost.platforms.instagram-facebook.graph_api');
+    Http::fake([
+        "{$graph}/ig_audio?audio_type=music*" => Http::response(['audio' => [['audio_id' => '111', 'title' => 'Grudge', 'display_artist' => 'Tash', 'audio_type' => 'music', 'duration_in_ms' => 15000]]]),
+        "{$graph}/ig_audio?audio_type=original_sound*" => Http::response(['audio' => []]),
+        "{$graph}/111*" => Http::response(['audio_id' => '111', 'title' => 'Grudge', 'display_artist' => 'Tash', 'audio_type' => 'music', 'duration_in_ms' => 15000]),
+    ]);
+    $instagram = SocialAccount::factory()->instagram()->create(['workspace_id' => $this->workspace->id, 'platform' => Platform::InstagramFacebook]);
+    $track = ['id' => '111', 'type' => 'music', 'title' => 'Grudge', 'artist' => 'Tash', 'cover_url' => null, 'duration_ms' => 15000, 'preview_url' => null];
+
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', [$instagram, 'q' => 'grudge']))->assertOk()->assertExactJson([$track]);
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.show', [$instagram, '111']))->assertOk()->assertExactJson($track);
+    auth()->forgetGuards();
+    $this->withHeaders(parityApi($this->token))->getJson(route('api.social-accounts.instagram-audio', [$instagram, 'q' => 'grudge']))->assertOk()->assertExactJson([$track]);
+    $this->withHeaders(parityApi($this->token))->getJson(route('api.social-accounts.instagram-audio.show', [$instagram, '111']))->assertOk()->assertExactJson($track);
+    TryPostServer::actingAs($this->user)->tool(SearchInstagramAudioTool::class, ['account_id' => $instagram->id, 'q' => 'grudge'])->assertOk()->assertStructuredContent(['audio' => [$track]]);
+    TryPostServer::actingAs($this->user)->tool(GetInstagramAudioTool::class, ['account_id' => $instagram->id, 'audio_id' => '111'])->assertOk()->assertStructuredContent($track);
+});
+
+test('instagram audio asks an account connected without facebook to link it on the web, api and mcp', function () {
+    $instagram = SocialAccount::factory()->instagram()->create(['workspace_id' => $this->workspace->id]);
+    $message = __('posts.form.instagram.music.requires_facebook');
+    Http::fake();
+
+    $this->actingAs($this->user)->getJson(route('app.instagram.audio.index', $instagram))->assertUnprocessable()->assertJsonValidationErrors(['q' => $message]);
+    auth()->forgetGuards();
+    $this->withHeaders(parityApi($this->token))->getJson(route('api.social-accounts.instagram-audio', $instagram))->assertUnprocessable()->assertJsonPath('message', $message);
+    TryPostServer::actingAs($this->user)->tool(SearchInstagramAudioTool::class, ['account_id' => $instagram->id])->assertHasErrors([$message]);
+    TryPostServer::actingAs($this->user)->tool(GetInstagramAudioTool::class, ['account_id' => $instagram->id, 'audio_id' => '111'])->assertHasErrors([$message]);
+
+    Http::assertNothingSent();
+});
+
+test('instagram audio lookups of another workspace are refused on the api and mcp', function () {
+    $foreign = SocialAccount::factory()->instagram()->create(['workspace_id' => Workspace::factory()->create()->id, 'platform' => Platform::InstagramFacebook]);
+    Http::fake();
+
+    auth()->forgetGuards();
+    $this->withHeaders(parityApi($this->token))->getJson(route('api.social-accounts.instagram-audio', $foreign))->assertNotFound();
+    TryPostServer::actingAs($this->user)->tool(SearchInstagramAudioTool::class, ['account_id' => $foreign->id])->assertHasErrors();
+
+    Http::assertNothingSent();
 });
