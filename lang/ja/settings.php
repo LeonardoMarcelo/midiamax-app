@@ -9,9 +9,8 @@ return [
         'groups' => [
             'personal' => '個人',
             'workspace' => 'ワークスペース',
-            'features' => '機能',
-            'developers' => '開発者',
-            'account' => 'アカウント',
+            'content' => 'コンテンツ',
+            'integrations' => '連携',
         ],
         'items' => [
             'profile' => 'プロフィール',
@@ -24,7 +23,7 @@ return [
             'signatures' => '署名',
             'labels' => 'ラベル',
             'webhooks' => 'ウェブフック',
-            'api_keys' => 'API キー',
+            'api_keys' => 'API',
             'mcp' => 'MCP',
             'billing' => 'お支払い',
         ],

@@ -9,9 +9,8 @@ return [
         'groups' => [
             'personal' => 'Προσωπικά',
             'workspace' => 'Workspace',
-            'features' => 'Λειτουργίες',
-            'developers' => 'Προγραμματιστές',
-            'account' => 'Λογαριασμός',
+            'content' => 'Περιεχόμενο',
+            'integrations' => 'Ενσωματώσεις',
         ],
         'items' => [
             'profile' => 'Προφίλ',
@@ -24,7 +23,7 @@ return [
             'signatures' => 'Υπογραφές',
             'labels' => 'Ετικέτες',
             'webhooks' => 'Webhooks',
-            'api_keys' => 'Κλειδιά API',
+            'api_keys' => 'API',
             'mcp' => 'MCP',
             'billing' => 'Χρέωση',
         ],

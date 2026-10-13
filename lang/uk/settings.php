@@ -9,9 +9,8 @@ return [
         'groups' => [
             'personal' => 'Особисте',
             'workspace' => 'Робочий простір',
-            'features' => 'Функції',
-            'developers' => 'Розробникам',
-            'account' => 'Обліковий запис',
+            'content' => 'Контент',
+            'integrations' => 'Інтеграції',
         ],
         'items' => [
             'profile' => 'Профіль',
@@ -24,7 +23,7 @@ return [
             'signatures' => 'Підписи',
             'labels' => 'Мітки',
             'webhooks' => 'Вебхуки',
-            'api_keys' => 'API-ключі',
+            'api_keys' => 'API',
             'mcp' => 'MCP',
             'billing' => 'Оплата',
         ],

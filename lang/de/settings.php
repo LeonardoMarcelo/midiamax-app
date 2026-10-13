@@ -11,9 +11,8 @@ return [
         'groups' => [
             'personal' => 'Persönlich',
             'workspace' => 'Workspace',
-            'features' => 'Funktionen',
-            'developers' => 'Entwickler',
-            'account' => 'Konto',
+            'content' => 'Inhalte',
+            'integrations' => 'Integrationen',
         ],
         'items' => [
             'profile' => 'Profil',
@@ -26,7 +25,7 @@ return [
             'signatures' => 'Signaturen',
             'labels' => 'Labels',
             'webhooks' => 'Webhooks',
-            'api_keys' => 'API-Keys',
+            'api_keys' => 'API',
             'mcp' => 'MCP',
             'billing' => 'Abrechnung',
         ],

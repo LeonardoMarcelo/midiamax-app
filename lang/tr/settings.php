@@ -11,9 +11,8 @@ return [
         'groups' => [
             'personal' => 'Kişisel',
             'workspace' => 'Çalışma Alanı',
-            'features' => 'Özellikler',
-            'developers' => 'Geliştiriciler',
-            'account' => 'Hesap',
+            'content' => 'İçerik',
+            'integrations' => 'Entegrasyonlar',
         ],
         'items' => [
             'profile' => 'Profil',
@@ -26,7 +25,7 @@ return [
             'signatures' => 'İmzalar',
             'labels' => 'Etiketler',
             'webhooks' => 'Webhooklar',
-            'api_keys' => 'API Anahtarları',
+            'api_keys' => 'API',
             'mcp' => 'MCP',
             'billing' => 'Faturalandırma',
         ],

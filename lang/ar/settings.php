@@ -9,9 +9,8 @@ return [
         'groups' => [
             'personal' => 'شخصي',
             'workspace' => 'مساحة العمل',
-            'features' => 'الميزات',
-            'developers' => 'المطورون',
-            'account' => 'الحساب',
+            'content' => 'المحتوى',
+            'integrations' => 'التكاملات',
         ],
         'items' => [
             'profile' => 'الملف الشخصي',
@@ -24,7 +23,7 @@ return [
             'signatures' => 'التوقيعات',
             'labels' => 'التسميات',
             'webhooks' => 'Webhooks',
-            'api_keys' => 'مفاتيح API',
+            'api_keys' => 'API',
             'mcp' => 'MCP',
             'billing' => 'الفوترة',
         ],

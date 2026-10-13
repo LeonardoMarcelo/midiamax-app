@@ -87,10 +87,17 @@ Route::middleware(['auth'])->group(function () {
     Route::post('welcome/persona', [WelcomeController::class, 'storePersona'])->name('app.welcome.persona.store');
     Route::get('welcome/goals', [WelcomeController::class, 'goals'])->name('app.welcome.goals');
     Route::post('welcome/goals', [WelcomeController::class, 'storeGoals'])->name('app.welcome.goals.store');
+    Route::get('welcome/software', [WelcomeController::class, 'software'])->name('app.welcome.software');
+    Route::post('welcome/software', [WelcomeController::class, 'storeSoftware'])->name('app.welcome.software.store');
     Route::get('welcome/plan', [WelcomeController::class, 'plan'])->name('app.welcome.plan');
     Route::post('welcome/plan', [WelcomeController::class, 'storePlan'])
         ->middleware('throttle:6,1')
         ->name('app.welcome.plan.store');
+    Route::get('welcome/mcp', [WelcomeController::class, 'mcp'])->name('app.welcome.mcp');
+    Route::post('welcome/mcp/connect-click', [WelcomeController::class, 'storeMcpConnectClick'])
+        ->middleware('throttle:30,1')
+        ->name('app.welcome.mcp.connect-click');
+    Route::get('welcome/mcp/skip', [WelcomeController::class, 'skipMcp'])->name('app.welcome.mcp.skip');
     Route::post('referral-source', [ReferralSourceController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('app.referral-source.store');

@@ -225,8 +225,8 @@ In dialogs and slide-overs with Cancel and a primary action, render **Cancel fir
 
 Critical means losing it breaks something outside the item itself or cannot be rebuilt by the user in a minute. Only these ask the user to type:
 
-- **The resource's name or identity:** deleting a workspace (its name), removing a member or invitation (their email) and removing an MCP client (its name).
-- **A fixed keyword:** deleting or regenerating an API key (`REGENERATE` for the latter), because integrations stop working at once, and disconnecting a channel (`DISCONNECT`), because its queue and automations stop.
+- **The resource's name or identity:** deleting a workspace (its name) and removing a member or invitation (their email).
+- **A fixed keyword:** deleting or regenerating an API key (`REGENERATE` for the latter), because integrations stop working at once, and disconnecting a channel or an MCP app (`disconnect`), because its queue and automations, or the AI integration, stop.
 
 Do not add typing to a new dialog unless it meets that bar; when in doubt, ask.
 
@@ -237,6 +237,7 @@ Typing the exact name is the stronger guard for the identity-bound ones, on purp
 - Resolve it with `$t` in the template, not `trans()` in script (see `.ai/rules/js.md`).
 - Regenerating an API key uses its own keyword, `settings.api_keys.regenerate_modal.keyword` (`REGENERATE`, `REGENERAR`, …), under the same rules.
 - **Exception — disconnecting a channel** (`DisconnectChannelDialog`, user decision October 2026): its keyword, `channels.disconnect_modal.keyword`, is translated and **lowercase** (`disconnect`, `desconectar`, …), shown as the input placeholder and in the copyable keyword line `Type [disconnect ⧉] to confirm.` (same markup as `ConfirmDeleteModal`), and still compared case-sensitively after trimming (`DISCONNECT` must not confirm). The dialog ends its description with a bold `This cannot be undone.` and offers **Refresh connection** before disconnecting. Do not carry either into the other dialogs.
+- **Disconnecting an MCP app** (`settings/workspace/Mcp.vue`, owner decision October 2026) asks for the same `channels.disconnect_modal.keyword`, not the app's name, so the word matches the channel dialog in every locale (compared case-sensitively after trimming). It keeps the plain `ConfirmDeleteModal` without the refresh option or the bold line.
 
 ## Translated copy must fit its UI slot
 
@@ -278,7 +279,7 @@ Standing constraints:
 - Empty coupon + card required + first-time must use `trialDays` — do **not** reintroduce a required-coupon throw.
 - Coupon qualification stays: card required, no prior real subscription (`incomplete` / `incomplete_expired` still qualify), **and** the checkout price is that plan's **monthly** price. Workspace count is irrelevant — Socials is already capped at one, and a first-time Workspaces subscriber qualifies the same way.
 - First-month coupons are **per plan**. Socials is `$18` off, Workspaces is `$88` off. Never apply one plan's coupon to the other price, and never apply either coupon to a yearly price — `$190 − $18` is not `$1`.
-- Welcome checkout (`app.welcome.plan`) is monthly only. Yearly stays on the billing change-plan picker for existing subscribers (they do not get a first-month coupon).
+- Welcome checkout is the last Welcome step, the plan step (`app.welcome.plan.store`): it shows only **Socials**, monthly, with the first-month offer, and always opens Stripe Checkout on the **Socials monthly** price. Yearly and Workspaces stay on the billing change-plan picker for existing subscribers (they do not get a first-month coupon).
 - Prefer documenting durable billing decisions here (and in `AGENTS.md`) — do **not** create a `.ai/` rules folder for this project.
 
 ## Plans and the workspace limit
@@ -305,12 +306,14 @@ used** — `syncWorkspaceQuantity()` was removed with the per-workspace model.
   that plan's monthly price. Workspace count is not part of it.
   (`incomplete` / `incomplete_expired` still qualify; coupon +
   `allow_promotion_codes` still throws.) Each plan has its own coupon.
-- Welcome is monthly only so the `$1` first month can exist. Billing keeps
-  yearly for subscribers swapping interval.
+- Welcome checks out Socials monthly only so the `$1` first month can exist.
+  Billing keeps yearly and Workspaces for subscribers changing plan.
 - The legacy plan is archived: it never appears in the picker, so nobody can move
   back to it. Its `workspace_limit` is 1 because it costs less than Socials.
-- Plan choice is a welcome step (`app.welcome.plan`) and the same `PlanPicker`
-  component drives upgrade/downgrade on the billing page (`app.billing.change-plan`).
+- Welcome's plan step (`app.welcome.plan`, after the current-tool step) shows
+  only Socials (owner decision October 2026): new owners always start on
+  Socials. The same `PlanPicker` drives upgrade/downgrade on the billing page
+  (`app.billing.change-plan`).
   A change is a `swap()` to another price id. `accounts.plan_id` is written by
   `changePlan` after a successful `swap()` only when the subscription is
   `active` or `trialing` (so create works before the webhook). Welcome checkout

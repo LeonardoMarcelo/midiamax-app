@@ -9,9 +9,8 @@ return [
         'groups' => [
             'personal' => 'Pessoal',
             'workspace' => 'Workspace',
-            'features' => 'Recursos',
-            'developers' => 'Desenvolvedores',
-            'account' => 'Conta',
+            'content' => 'Conteúdo',
+            'integrations' => 'Integrações',
         ],
         'items' => [
             'profile' => 'Perfil',
@@ -24,7 +23,7 @@ return [
             'signatures' => 'Assinaturas',
             'labels' => 'Etiquetas',
             'webhooks' => 'Webhooks',
-            'api_keys' => 'API Keys',
+            'api_keys' => 'API',
             'mcp' => 'MCP',
             'billing' => 'Cobrança',
         ],
