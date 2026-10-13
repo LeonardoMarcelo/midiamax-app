@@ -823,7 +823,7 @@ defineExpose({ openDetails });
                             {{ $t('notes.title') }}
                             <span
                                 v-if="noteCount > 0"
-                                class="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-strong px-1.5 text-xs font-semibold text-primary-strong-foreground tabular-nums"
+                                class="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-selected px-1 text-[10px] leading-none font-medium text-primary-text tabular-nums"
                                 :data-testid="`post-notes-count-${post.id}`"
                                 >{{ noteCount > 99 ? '99+' : noteCount }}</span
                             >
