@@ -64,7 +64,9 @@ com crédito e sem sugerir vínculo.
 | `app/MidiaMax/**` | Toda lógica nossa. Provider é o único ponto de entrada. | Bind quebra se o upstream renomear a classe alvo |
 | `config/midiamax.php` | Marca + oferta de fonte AGPL | — |
 | `routes/midiamax.php` | Rotas nossas (hoje: `/codigo-fonte`) | Colisão de path se o upstream criar a mesma rota |
-| `resources/views/midiamax/source.blade.php` | Página de oferta de fonte (§13). HTML puro de propósito | — |
+| `resources/views/midiamax/layout.blade.php` | Layout das páginas públicas. HTML puro de propósito | — |
+| `resources/views/midiamax/source.blade.php` | Página de oferta de fonte (§13) | — |
+| `resources/views/midiamax/legal/*.blade.php` | Termos, privacidade e exclusão de dados. Exigidos por app review e LGPD | Precisam de revisão jurídica antes de submeter app review |
 | `resources/css/midiamax-theme.css` | Override das CSS vars | Upstream renomear variável de tema |
 | `lang-midiamax/{pt-BR,en}/` | Strings novas, namespace `midiamax::` | — |
 | `database/migrations/midiamax/` | Migrations nossas | — |
@@ -94,7 +96,27 @@ Funciona porque o pipeline do Laravel resolve middleware pelo container, então
 - **Verificar que o bind ainda vale:**
   `php artisan tinker --execute="echo get_class(app(App\Http\Middleware\App\SetLocale::class));"`
 
-## 4. Decisões que valem lembrar
+## 4. Correções de bug do upstream feitas por cima da config
+
+Em `MidiaMaxServiceProvider::normalizeUpstreamConfig()`. Zero linhas em arquivo
+do upstream. Cada item é candidato a PR — quando for aceito, remover daqui.
+
+### `cashier.trial_days` precisa de cast para int
+
+`config/cashier.php:143` faz `env('CASHIER_TRIAL_DAYS', 8)` sem cast e
+`app/Actions/User/CreateUser.php:39` passa o valor direto para
+`now()->addDays()`, que exige `int|float`.
+
+Com a variável definida no `.env` — e o próprio `.env.example` do upstream traz
+`CASHIER_TRIAL_DAYS=8` — o valor chega como string `'8'` e o **cadastro quebra
+com TypeError do Carbon**. Em modo SaaS com `REQUIRE_CARD_FOR_TRIAL=false`,
+ninguém consegue criar conta. Sem a variável definida o default `int` funciona,
+o que deixa o bug invisível.
+
+- **Conferir a cada release:** `git diff <base> <nova-tag> -- config/cashier.php app/Actions/User/CreateUser.php`
+- **Verificar:** `php artisan tinker --execute="echo gettype(config('cashier.trial_days'));"` → `integer`
+
+## 5. Decisões que valem lembrar
 
 - **`release-docker.yml` do upstream foi mantido intocado.** Ele dispara em tags
   `v*.*.*`; nossas tags são `mm-v*`, então ele nunca roda por acidente — desde que

@@ -27,7 +27,26 @@ class MidiaMaxServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->normalizeUpstreamConfig();
         $this->overrideUpstreamImplementations();
+    }
+
+    /**
+     * Correcoes de bug do upstream feitas por cima da config, sem editar o
+     * arquivo deles. Cada item e candidato a PR no upstream — quando for
+     * aceito, remover daqui.
+     */
+    protected function normalizeUpstreamConfig(): void
+    {
+        // config/cashier.php:143 faz env('CASHIER_TRIAL_DAYS', 8) sem cast, e
+        // CreateUser.php:39 passa o valor direto para now()->addDays(), que
+        // exige int|float. Com a variavel definida no .env (o proprio
+        // .env.example do upstream traz CASHIER_TRIAL_DAYS=8) o valor chega
+        // como string '8' e o cadastro quebra com TypeError do Carbon —
+        // em modo SaaS com REQUIRE_CARD_FOR_TRIAL=false, ninguem consegue
+        // criar conta. Sem a variavel definida, o default int funciona e o bug
+        // fica invisivel.
+        config(['cashier.trial_days' => (int) config('cashier.trial_days')]);
     }
 
     /**

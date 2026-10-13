@@ -69,6 +69,26 @@ docker compose exec app npm run build
 docker compose exec app php artisan test
 ```
 
+### A suíte do upstream não é 100% verde — compare, não olhe o vermelho
+
+Medido em 13/10/2026 na tag `v2.0.0`: os jobs `Browser (1/3)` e `e2e` falham
+**no upstream puro**, sem nenhuma modificação nossa (`WorkspaceInsightsTest`,
+com `StrayRequestException` numa chamada à API do YouTube). Os jobs
+`Tests (PostgreSQL)` e `Tests (MySQL)` passam.
+
+Então "CI vermelho" não significa "nossa mudança quebrou". O que vale é a
+**comparação**: suba o commit puro da tag numa branch que o `tests.yml` deles
+observa (`main` ou `develop`) e compare os jobs que falham.
+
+```bash
+git push origin v2.1.0^{commit}:refs/heads/develop   # upstream puro
+# comparar os jobs que falham nos dois runs
+gh run list --workflow=tests.yml --branch=develop --limit 1
+git push origin --delete develop                      # limpar depois
+```
+
+Falhou um job que **não** falha no puro? Aí é nosso.
+
 Checar também se o release introduziu env var nova:
 
 ```bash
