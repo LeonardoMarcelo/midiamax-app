@@ -192,3 +192,44 @@ test('the notes toggle says whether it shows or hides the notes', function () {
     $page->assertSeeIn("@post-notes-tooltip-{$post->id}", __('notes.hide'))
         ->assertNoJavaScriptErrors();
 });
+
+test('the notes count follows the thread when it opens and when a note is deleted', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create(['user_id' => $user->id]);
+    $workspace->members()->attach($user->id, membershipPivot('admin'));
+    $user->update(['current_workspace_id' => $workspace->id]);
+    $post = Post::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'content' => 'hello team']);
+    PostNote::factory()->create(['post_id' => $post->id, 'user_id' => $user->id, 'body' => 'First']);
+    $this->actingAs($user);
+
+    $page = visit(route('app.posts.index', ['tab' => 'drafts']));
+    waitForPostNotesTestId($page, "post-notes-count-{$post->id}");
+    $page->assertSeeIn("@post-notes-count-{$post->id}", '1');
+
+    PostNote::factory()->create(['post_id' => $post->id, 'user_id' => $user->id, 'body' => 'Second']);
+    $page->click("@post-notes-trigger-{$post->id}");
+    waitForPostNotesTestId($page, 'note-body');
+    $page->script(<<<'JS'
+        (async () => {
+            for (let i = 0; i < 100; i++) {
+                if (document.querySelectorAll('[data-testid="note-item"]').length === 2) return;
+                await new Promise((r) => setTimeout(r, 50));
+            }
+        })();
+    JS);
+    $page->assertSeeIn("@post-notes-count-{$post->id}", '2');
+
+    $page->hover('@note-item')->click('@note-actions');
+    waitForPostNotesTestId($page, 'note-delete');
+    $page->click('@note-delete');
+    $page->script(<<<'JS'
+        (async () => {
+            for (let i = 0; i < 100; i++) {
+                if (document.querySelectorAll('[data-testid="note-item"]').length === 1) return;
+                await new Promise((r) => setTimeout(r, 50));
+            }
+        })();
+    JS);
+
+    $page->assertSeeIn("@post-notes-count-{$post->id}", '1')->assertNoJavaScriptErrors();
+});

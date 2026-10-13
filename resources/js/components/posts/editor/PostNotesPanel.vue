@@ -26,6 +26,7 @@ interface PaginatedResponse {
     meta: {
         current_page: number;
         last_page: number;
+        total: number;
     };
 }
 
@@ -36,7 +37,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    countChange: [delta: number];
+    count: [total: number];
 }>();
 
 const page = usePage();
@@ -47,6 +48,7 @@ const csrfToken =
         ?.content ?? '';
 
 const notes = ref<PostNote[]>([]);
+const total = ref(0);
 const currentPage = ref(1);
 const lastPage = ref(1);
 const loading = ref(false);
@@ -57,6 +59,8 @@ const highlightedId = ref<string | null>(null);
 
 const scrollContainer = ref<HTMLDivElement | null>(null);
 const composerInput = ref<{ $el: HTMLInputElement } | null>(null);
+
+watch(total, (count) => emit('count', count));
 
 const hasOlderNotes = computed(() => currentPage.value < lastPage.value);
 const canSend = computed(() => newBody.value.trim() !== '' && !sending.value);
@@ -95,6 +99,7 @@ const loadNotes = async (page = 1) => {
         const chronological = [...data.data].reverse();
         currentPage.value = data.meta.current_page;
         lastPage.value = data.meta.last_page;
+        total.value = data.meta.total;
 
         if (page === 1) {
             notes.value = chronological;
@@ -143,7 +148,7 @@ const sendNote = async () => {
         const created: PostNote = await response.json();
         notes.value.push(created);
 
-        emit('countChange', 1);
+        total.value++;
         newBody.value = '';
         await nextTick();
         scrollToBottom();
@@ -180,7 +185,7 @@ const deleteNote = async (note: PostNote) => {
     }
 
     notes.value = notes.value.filter((item) => item.id !== note.id);
-    emit('countChange', -1);
+    total.value = Math.max(0, total.value - 1);
 };
 
 const handleComposerKeydown = (event: KeyboardEvent) => {
