@@ -125,7 +125,7 @@ resolvem — e configure SPF/DKIM do domínio ou cai em spam.
 | Variável | Onde conseguir |
 | --- | --- |
 | `STRIPE_KEY` / `STRIPE_SECRET` | https://dashboard.stripe.com/apikeys |
-| `STRIPE_WEBHOOK_SECRET` | Stripe → Developers → Webhooks → endpoint `https://app.midiamax.com.br/stripe/webhook` |
+| `STRIPE_WEBHOOK_SECRET` | Stripe → Developers → Webhooks → endpoint `https://app.midiamax.com.br/stripe/webhook` ou o alias `…/api/v1/webhooks/cobranca/stripe`. O `whsec_` é **por endpoint**: usar o de outro endpoint faz todo evento ser rejeitado com 403 |
 | `STRIPE_WORKSPACE_MONTHLY` / `_YEARLY` | price IDs (`price_...`) dos produtos criados no Stripe |
 | `STRIPE_SOCIALS_MONTHLY` / `_YEARLY` | idem |
 | `STRIPE_WORKSPACES_MONTHLY` / `_YEARLY` | idem |
@@ -330,6 +330,23 @@ E as nossas oito ficam ligadas (default `true`, explícitas no `.env.example`):
 `AI_AUDIO_PROVIDER`, mais a chave do provedor escolhido: `OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`,
 `ELEVENLABS_API_KEY`. Tudo vazio desliga as features de IA.
+
+O app esconde os recursos de IA sozinho quando não há chave: o
+`HandleInertiaRequests` publica `aiEnabled` para o frontend com base nisso.
+
+**Fixe o modelo com um alias `-latest`.** Os modelos default do pacote podem ser
+aposentados pelo provedor, e aí o driver reporta *"AI provider is overloaded"* —
+mensagem que despista completamente, porque a causa real é um 404
+*"no longer available to new users"*. Aconteceu em 13/10/2026 com
+`gemini-2.5-flash` e `gemini-2.0-flash`. Diagnostique sempre chamando a API
+direto antes de culpar o provedor:
+
+```bash
+curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY"
+```
+
+Em uso hoje: `GEMINI_TEXT_MODEL=gemini-flash-lite-latest` (testado, gerando em
+pt-BR). Aliases `-latest` acompanham a troca de geração sozinhos.
 
 Custo de IA é por uso e sai do seu bolso: modele no preço do plano antes de ligar.
 

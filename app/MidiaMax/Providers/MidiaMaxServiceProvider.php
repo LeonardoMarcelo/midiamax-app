@@ -102,6 +102,10 @@ class MidiaMaxServiceProvider extends ServiceProvider
         }
 
         Route::middleware('web')->group(base_path('routes/midiamax.php'));
+
+        // Sem o grupo "web" de proposito: webhook nao tem sessao nem CSRF.
+        // Ver o cabecalho de routes/midiamax-webhooks.php.
+        Route::group([], base_path('routes/midiamax-webhooks.php'));
     }
 
     /**

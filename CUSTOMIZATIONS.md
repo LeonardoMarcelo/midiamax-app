@@ -63,7 +63,8 @@ com crédito e sem sugerir vínculo.
 | --- | --- | --- |
 | `app/MidiaMax/**` | Toda lógica nossa. Provider é o único ponto de entrada. | Bind quebra se o upstream renomear a classe alvo |
 | `config/midiamax.php` | Marca + oferta de fonte AGPL | — |
-| `routes/midiamax.php` | Rotas nossas (hoje: `/codigo-fonte`) | Colisão de path se o upstream criar a mesma rota |
+| `routes/midiamax.php` | Rotas públicas nossas (`/codigo-fonte`, legais) | Colisão de path se o upstream criar a mesma rota |
+| `routes/midiamax-webhooks.php` | Alias `POST /api/v1/webhooks/cobranca/stripe` → `WebhookController` do Cashier. Carregado **sem** o grupo `web` (webhook não tem sessão nem CSRF) | Quebra se o Cashier renomear o controller |
 | `resources/views/midiamax/layout.blade.php` | Layout das páginas públicas. HTML puro de propósito | — |
 | `resources/views/midiamax/source.blade.php` | Página de oferta de fonte (§13) | — |
 | `resources/views/midiamax/legal/*.blade.php` | Termos, privacidade e exclusão de dados. Exigidos por app review e LGPD | Precisam de revisão jurídica antes de submeter app review |
