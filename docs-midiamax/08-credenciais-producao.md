@@ -12,19 +12,77 @@ Legenda: 🔴 sem isso não sobe · 🟡 sem isso falta função · ⚪ opcional
 
 ---
 
+## Status em 13/10/2026
+
+Os valores gerados estão em `midiamax-infra/.env.gerado` (não versionado) e o
+detalhamento por conta em `CREDENCIAIS.md`, no repo privado.
+
+### ✅ Pronto
+
+| Bloco | O que foi feito |
+| --- | --- |
+| 1 · Aplicação | `APP_KEY` gerada |
+| 2 · Banco | `DB_PASSWORD` gerada |
+| 3 · Redis/filas | valores fixos, nada a obter |
+| 4 · Reverb | `REVERB_APP_KEY` e `REVERB_APP_SECRET` geradas |
+| 5 · Passport | par RSA 4096 gerado |
+| 8 · Stripe | chaves, produtos, preços **mensais e anuais**, rótulos alinhados, webhook criado e **assinatura validada (HTTP 200 ponta a ponta)** |
+| 9.1 · Telegram | bot criado, token configurado, webhook registrado e respondendo |
+| 9.8 · Flags | plataformas não usadas desligadas |
+| 10 · IA | Gemini gerando legenda em pt-BR |
+| 12 · Páginas legais | `/termos`, `/privacidade`, `/exclusao-de-dados` e `/codigo-fonte` no ar, com os dados do controlador |
+| 13 · GitHub | `vars.APP_NAME`, `vars.APP_DOMAIN` e `secrets.REVERB_APP_KEY` configurados |
+| — · Backup | `instalar-cron-backup.sh` e `verificar-backup.sh` prontos (instalar no servidor) |
+
+### ⚠️ Parcial — funciona, mas não serve para produção ainda
+
+| Bloco | O que falta |
+| --- | --- |
+| 7 · E-mail | Resend autentica e envia, mas o remetente é o de teste: **só entrega para o dono da conta**. Falta verificar um domínio e configurar SPF/DKIM |
+| 9.2 · Discord | client ID e secret configurados; falta o **bot token** (é ele que publica) e cadastrar o redirect no portal |
+| 9.5 · Meta | app criado e credenciais válidas; faltam os **três redirects**, as credenciais do produto Instagram, App Review e Verificação do Negócio |
+| 9.7 · YouTube | está usando um cliente OAuth de outro projeto Google — a tela de consentimento mostra o nome errado. Criar projeto dedicado, habilitar as duas APIs e **pedir aumento de quota** |
+
+### ❌ Pendente
+
+| Bloco | Item |
+| --- | --- |
+| 0 | **Domínio** e **VPS** — hoje tudo depende do túnel ngrok |
+| 6 | Bucket R2 e credenciais de storage |
+| 9.3 | App do LinkedIn |
+| 9.4 | App do Pinterest |
+| 11 | `HORIZON_ALLOWED_EMAILS` de produção e monitoramento externo de uptime |
+| 12 | E-mail de contato real e **revisão jurídica** dos textos |
+| — | Cópia dos backups **para fora** do servidor |
+| — | Enquadramento fiscal: o CNAE atual não cobre SaaS — falar com o contador **antes** do App Review |
+
+### Ordem sugerida
+
+1. Domínio + VPS (destrava quase tudo: HTTPS real, e-mail, redirects definitivos)
+2. `DISCORD_BOT_TOKEN` e redirects da Meta e do Discord — rápidos
+3. Verificar domínio no Resend
+4. R2
+5. Projeto Google dedicado + pedido de quota (demora, abrir cedo)
+6. LinkedIn e Pinterest
+7. Revisão jurídica e contador
+
+---
+
 ## 0. Antes das credenciais
 
-| Item | Onde |
-| --- | --- |
-| 🔴 Domínio | Registro.br, Cloudflare ou similar. Ex.: `midiamax.com.br`, app em `app.midiamax.com.br` |
-| 🔴 VPS | Hetzner / DigitalOcean / Contabo. 4 vCPU, 8 GB, 80 GB SSD |
-| 🔴 DNS | registro `A` do subdomínio apontando para o IP da VPS, **antes** de subir o Caddy (ele precisa resolver para emitir o certificado) |
-| 🟡 CNPJ | já temos. Necessário para Verificação do Negócio na Meta |
-| 🟡 Conta de e-mail do domínio | `suporte@` e `privacidade@`. App review da Meta testa esse contato |
+| Item                           | Onde                                                                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🔴 Domínio                    | Registro.br, Cloudflare ou similar. Ex.:`midiamax.com.br`, app em `app.midiamax.com.br`                                                |
+| 🔴 VPS                         | Hetzner / DigitalOcean / Contabo. 4 vCPU, 8 GB, 80 GB SSD                                                                                  |
+| 🔴 DNS                         | registro`A` do subdomínio apontando para o IP da VPS, **antes** de subir o Caddy (ele precisa resolver para emitir o certificado) |
+| 🟡 CNPJ                        | já temos. Necessário para Verificação do Negócio na Meta                                                                              |
+| 🟡 Conta de e-mail do domínio | `suporte@` e `privacidade@`. App review da Meta testa esse contato                                                                     |
 
 ---
 
 ## 1. Aplicação 🔴
+
+> **Status:** `APP_KEY` gerada. Falta `APP_URL`/`APP_DOMAIN` definitivos (depende do domínio).
 
 ```env
 APP_NAME=MidiaMax
@@ -56,6 +114,8 @@ redes sociais dos clientes. Não há recuperação.
 
 ## 2. Banco de dados 🔴
 
+> **Status:** senha gerada. ✅
+
 ```env
 DB_CONNECTION=pgsql
 DB_HOST=pgsql
@@ -71,6 +131,8 @@ variável — define uma vez só.
 ---
 
 ## 3. Redis, filas, cache, sessão 🔴
+
+> **Status:** ✅ nada a obter.
 
 ```env
 REDIS_HOST=redis
@@ -88,6 +150,8 @@ Valores fixos — não precisa conseguir nada em lugar nenhum.
 ---
 
 ## 4. Reverb / WebSocket 🔴
+
+> **Status:** chaves geradas e já replicadas no GitHub. Falta `REVERB_HOST` definitivo.
 
 ```env
 REVERB_APP_ID=1001
@@ -107,6 +171,8 @@ nenhum** — só aparece no console do browser.
 
 ## 5. Passport — tokens de API e MCP 🔴
 
+> **Status:** par RSA 4096 gerado. ✅
+
 ```bash
 openssl genrsa -out oauth-private.key 4096
 openssl rsa -in oauth-private.key -pubout -out oauth-public.key
@@ -125,6 +191,8 @@ seus clientes.
 ---
 
 ## 6. Armazenamento de mídia 🔴
+
+> **Status:** ❌ bucket não criado. Hoje a mídia cairia em disco local.
 
 **Cloudflare R2** (recomendado — sem custo de egresso):
 https://dash.cloudflare.com → R2 → criar bucket → *Manage R2 API Tokens*
@@ -148,6 +216,9 @@ escala e complica backup).
 ---
 
 ## 7. E-mail 🔴
+
+> **Status:** ⚠️ Resend autentica e envia, mas o remetente de teste só entrega
+> para o dono da conta. Verificar um domínio é o que falta.
 
 Sem SMTP real, convite de equipe, verificação de e-mail e reset de senha **não
 chegam** — o default da imagem é `log`.
@@ -180,6 +251,10 @@ e-mail dono da conta, e sem SPF/DKIM o resto cai em spam.
 ---
 
 ## 8. Stripe 🔴
+
+> **Status:** ✅ chaves, produtos, preços mensais e anuais, rótulos alinhados e
+> webhook com assinatura validada ponta a ponta. Ao trocar para o domínio
+> definitivo, **edite a URL do endpoint existente** — assim o `whsec_` é preservado.
 
 Obrigatório porque `SELF_HOSTED=false`.
 
@@ -463,6 +538,9 @@ GOOGLE_BUSINESS_ENABLED=false
 
 ## 10. Inteligência artificial 🟡
 
+> **Status:** ✅ Gemini gerando em pt-BR, modelo fixado num alias `-latest`.
+> Sem limite de consumo por plano — risco de margem.
+
 Sem chave, o app esconde os recursos de IA sozinho (`aiEnabled`).
 
 **Gemini** — https://aistudio.google.com/apikey
@@ -494,6 +572,8 @@ nenhum código a usa).
 
 ## 11. Observabilidade ⚪
 
+> **Status:** ❌ `HORIZON_ALLOWED_EMAILS` de produção e uptime externo pendentes.
+
 ```env
 HORIZON_ALLOWED_EMAILS=voce@midiamax.com.br     # 🔴 ver aviso abaixo
 NIGHTWATCH_ENABLED=false
@@ -515,6 +595,9 @@ local. Mantenha `TELESCOPE_ENABLED=false`.
 ---
 
 ## 12. Páginas legais e dados do controlador 🔴
+
+> **Status:** ✅ páginas no ar com os dados do controlador. ⚠️ falta e-mail de
+> contato real e **revisão jurídica**.
 
 Sem as duas primeiras, os links do app apontam para **trypost.it**.
 
@@ -542,14 +625,17 @@ obrigação da AGPL §13.
 
 ## 13. GitHub — build args da imagem 🔴
 
+> **Status:** ✅ as três configuradas. `APP_DOMAIN` está como `app.midiamax.com.br`
+> — se o domínio final for outro, trocar e **rebuildar a imagem**.
+
 Não vão no `.env`: entram no bundle JS no **build**. Em `midiamax-app` →
 Settings → Secrets and variables → **Actions**:
 
-| Tipo | Nome | Valor |
-| --- | --- | --- |
-| Variable | `APP_NAME` | `MidiaMax` |
-| Variable | `APP_DOMAIN` | `app.midiamax.com.br` |
-| Secret | `REVERB_APP_KEY` | **idêntico** ao `REVERB_APP_KEY` do `.env` |
+| Tipo     | Nome               | Valor                                                 |
+| -------- | ------------------ | ----------------------------------------------------- |
+| Variable | `APP_NAME`       | `MidiaMax`                                          |
+| Variable | `APP_DOMAIN`     | `app.midiamax.com.br`                               |
+| Secret   | `REVERB_APP_KEY` | **idêntico** ao `REVERB_APP_KEY` do `.env` |
 
 Mudar qualquer um exige **rebuild da imagem** — reiniciar o container não basta.
 
@@ -561,8 +647,9 @@ que tenha `read:packages`.
 ## 14. Checklist de go-live
 
 **Infra**
+
 - [ ] DNS apontando, HTTPS emitido pelo Caddy
-- [ ] `APP_KEY` e chaves do Passport geradas **e guardadas fora do servidor**
+- [x] `APP_KEY` e chaves do Passport geradas — ⚠️ **ainda precisam ir para o seu gerenciador de senhas**
 - [ ] `APP_DEBUG=false`, `APP_ENV=production`, `TELESCOPE_ENABLED=false`
 - [ ] `HORIZON_ALLOWED_EMAILS` preenchido
 - [ ] Backup automático do Postgres rodando **e testado com um restore real**
@@ -570,26 +657,31 @@ que tenha `read:packages`.
 - [ ] Monitoramento de uptime externo
 
 **Billing**
-- [ ] Produtos e preços criados, `price_...` no `.env`, `PlanSeeder` rodado
-- [ ] Rótulos `MIDIAMAX_PRICE_*` batendo com o que o Stripe cobra
-- [ ] Webhook criado, eventos habilitados, `whsec_` **daquele** endpoint
+
+- [x] Produtos e preços criados, `price_...` no `.env`, `PlanSeeder` rodado
+- [x] Rótulos `MIDIAMAX_PRICE_*` batendo com o que o Stripe cobra
+- [x] Webhook criado, eventos habilitados, `whsec_` **daquele** endpoint
 - [ ] Um checkout de teste ponta a ponta em modo de teste
 
 **Plataformas**
+
 - [ ] Redirects cadastrados em cada portal, idênticos ao `.env`
-- [ ] Plataformas não usadas com `*_ENABLED=false`
-- [ ] Webhook do Telegram registrado
+- [x] Plataformas não usadas com `*_ENABLED=false`
+- [x] Webhook do Telegram registrado
 
 **Legal**
-- [ ] `/termos`, `/privacidade`, `/exclusao-de-dados` e `/codigo-fonte` abrindo
-- [ ] Dados do controlador preenchidos
+
+- [x] `/termos`, `/privacidade`, `/exclusao-de-dados` e `/codigo-fonte` abrindo
+- [x] Dados do controlador preenchidos
 - [ ] Textos revisados por advogado
 - [ ] Repo público sincronizado com o que está em produção (AGPL §13)
 
 **Verificação final**
+
 ```bash
 for p in / /login /register /termos /privacidade /exclusao-de-dados /codigo-fonte; do
   printf "%-22s %s\n" "$p" "$(curl -s -o /dev/null -w '%{http_code}' https://app.midiamax.com.br$p)"
 done
 ```
+
 Todas 200. Depois: cadastrar, conectar uma rede, agendar um post e ver publicar.
