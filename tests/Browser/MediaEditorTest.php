@@ -213,6 +213,35 @@ test('one apply saves edits made to several images', function () {
         ->and($media[1]['meta']['alt_text'])->toBe('Four coloured squares');
 });
 
+test('a tagged person can be moved to a new position on the image', function () {
+    [$post] = seedMediaEditorPost();
+    $page = visit(route('app.posts.edit', $post));
+    openMediaEditor($page, $post->social_account_id);
+
+    $page->click('@media-editor-tags-tab')
+        ->click('@media-editor-tags-start');
+    clickMediaEditorStage($page, 0.25, 0.75);
+    $page->fill('@media-editor-tag-username', 'paulo')
+        ->click('@media-editor-tag-save')
+        ->assertSeeIn('@media-editor-tags-count', '1 / 20')
+        ->click('@media-editor-tags-finish')
+        ->click('@media-editor-tag-move-0')
+        ->assertVisible('@media-editor-tag-move-pill')
+        ->assertVisible('@media-editor-tag-move-hint');
+    clickMediaEditorStage($page, 0.6, 0.3);
+    $page->assertMissing('@media-editor-tag-move-pill')
+        ->assertMissing('@media-editor-tag-form')
+        ->click('@media-editor-apply');
+    saveMediaEditorDraft($page);
+
+    $tags = $post->fresh()->media[0]['meta']['user_tags'];
+    expect($tags)->toHaveCount(1)
+        ->and($tags[0]['username'])->toBe('paulo')
+        ->and($tags[0]['x'])->toEqualWithDelta(0.6, 0.02)
+        ->and($tags[0]['y'])->toEqualWithDelta(0.3, 0.02);
+    $page->assertNoJavaScriptErrors();
+});
+
 test('people tagged on an Instagram image are saved with their position', function () {
     [$post] = seedMediaEditorPost();
     $page = visit(route('app.posts.edit', $post));

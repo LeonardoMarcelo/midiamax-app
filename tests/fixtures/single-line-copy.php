@@ -73,6 +73,8 @@ return [
     'posts.composer.link_preview.replace_with_media' => 40,
     'posts.composer.media_editor.alt_tab' => 10,
     'posts.composer.media_editor.edit_tab' => 10,
+    'posts.composer.media_editor.tags_move' => 11,
+    'posts.composer.media_editor.tags_move_pill' => 25,
     'posts.composer.media_editor.tags_tab' => 10,
     'posts.composer.media_editor.thumbnail_tab' => 10,
     'posts.composer.schedule_picker.done' => 8,
