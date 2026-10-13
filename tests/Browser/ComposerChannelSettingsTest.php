@@ -606,6 +606,30 @@ test('save and link keeps a scheduled reel scheduled and opens the Facebook requ
     expect($post->fresh()->status)->toBe(Status::Scheduled);
 });
 
+test('save and link never publishes a scheduled reel switched to share now', function () {
+    fakeChannelSettingsApis();
+    $video = [['id' => (string) Str::uuid(), 'type' => 'video', 'path' => 'medias/clip.mp4', 'url' => 'https://example.com/clip.mp4', 'mime_type' => 'video/mp4', 'original_filename' => 'clip.mp4']];
+    $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramReel, $video);
+    $post->update(['status' => Status::Scheduled, 'scheduled_at' => now()->addDay()]);
+
+    $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
+    waitForChannelSettingsTestId($page, 'composer-schedule-trigger');
+    $page->click('@composer-schedule-trigger');
+    waitForChannelSettingsTestId($page, 'composer-schedule-more-actions');
+    $page->click('@composer-schedule-more-actions');
+    waitForChannelSettingsTestId($page, 'composer-schedule-now');
+    $page->click('@composer-schedule-now');
+    waitForChannelSettingsCondition($page, "document.querySelector('[data-testid=\"composer-submit\"]')?.dataset.scheduleMode === 'now'");
+
+    $page->click('@instagram-music-add');
+    waitForChannelSettingsTestId($page, 'instagram-music-save-and-link');
+    $page->click('@instagram-music-save-and-link');
+    waitForChannelSettingsTestId($page, 'instagram-facebook-requirements');
+
+    $page->assertNoJavaScriptErrors();
+    expect($post->fresh()->status)->toBe(Status::Draft);
+});
+
 test('save and link saves a draft reel as a draft before linking Facebook', function () {
     fakeChannelSettingsApis();
     $post = seedChannelSettingsPost(Platform::Instagram, ContentType::InstagramReel);
@@ -1356,3 +1380,21 @@ test('every character counter in the composer shares one design', function (Plat
 })->with([
     'characters left' => [Platform::X, ContentType::XPost, 'composer-char-count-{id}'],
 ]);
+
+test('a failed instagram music search says so and lets the picker close', function () {
+    Http::fake([config('trypost.platforms.instagram-facebook.graph_api').'/ig_audio*' => Http::response(['error' => ['code' => 2]], 500)]);
+    fakeChannelSettingsApis();
+    $post = seedChannelSettingsPost(Platform::InstagramFacebook, ContentType::InstagramReel);
+
+    $page = visit(route('app.posts.edit', $post))->resize(1280, 900);
+    waitForChannelSettingsTestId($page, 'instagram-music-add');
+
+    $page->click('@instagram-music-add');
+    waitForChannelSettingsTestId($page, 'instagram-music-failed');
+
+    $page->assertSeeIn('@instagram-music-failed', __('posts.form.instagram.music.search_failed'))
+        ->keys('@instagram-music-search', 'Escape');
+    waitForChannelSettingsCondition($page, "!document.querySelector('[data-testid=\"instagram-music-picker\"]')");
+
+    $page->assertNoJavaScriptErrors();
+});

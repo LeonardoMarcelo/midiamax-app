@@ -2,7 +2,6 @@
 import { useHttp } from '@inertiajs/vue3';
 import {
     IconAt,
-    IconFlask,
     IconInfoCircle,
     IconMusic,
     IconPlayerPauseFilled,
@@ -12,7 +11,7 @@ import {
     IconVolume,
     IconX,
 } from '@tabler/icons-vue';
-import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 
 import {
     index as audioIndex,
@@ -21,6 +20,7 @@ import {
 import InputError from '@/components/InputError.vue';
 import SettingsRow from '@/components/posts/editor/SettingsRow.vue';
 import SettingsSection from '@/components/posts/editor/SettingsSection.vue';
+import TrialReelIllustration from '@/components/posts/editor/TrialReelIllustration.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -67,6 +67,9 @@ const SOUND_WAVE_BARS = [
     { height: '50%', delay: '-450ms' },
 ];
 const COLLABORATORS_NOTICE_KEY = 'trypost:instagram:collaborators-notice-seen';
+const SEARCH_DEBOUNCE_MS = 300;
+const HOVER_PREVIEW_DELAY_MS = 150;
+const TOO_MANY_REQUESTS = 429;
 
 const TRIAL_OPTIONS = [
     { value: '', labelKey: 'posts.form.instagram.trial_reel.off' },
@@ -106,7 +109,7 @@ const writeFlag = (key: string): void => {
     try {
         localStorage.setItem(key, '1');
     } catch {
-        // Browser storage is optional; the notice simply shows again.
+        return;
     }
 };
 
@@ -151,10 +154,17 @@ const tracksFailed = ref(false);
 const tracksLimited = ref(false);
 
 const isRateLimited = (error: unknown): boolean =>
-    (error as { response?: { status?: number } })?.response?.status === 429;
+    (error as { response?: { status?: number } } | null)?.response?.status ===
+    TOO_MANY_REQUESTS;
 const audioHttp = useHttp<Record<string, never>, InstagramAudio[]>();
 
 let latestSearch = 0;
+
+const failSearch = (limited: boolean): void => {
+    tracks.value = [];
+    tracksFailed.value = true;
+    tracksLimited.value = limited;
+};
 
 const loadTracks = async (): Promise<void> => {
     const search = ++latestSearch;
@@ -170,12 +180,15 @@ const loadTracks = async (): Promise<void> => {
             }),
         );
         if (search !== latestSearch) return;
-        tracks.value = found;
+
+        if (Array.isArray(found)) {
+            tracks.value = found;
+        } else {
+            failSearch(false);
+        }
     } catch (error) {
         if (search !== latestSearch) return;
-        tracks.value = [];
-        tracksFailed.value = true;
-        tracksLimited.value = isRateLimited(error);
+        failSearch(isRateLimited(error));
     } finally {
         if (search === latestSearch) tracksLoading.value = false;
     }
@@ -184,7 +197,7 @@ const loadTracks = async (): Promise<void> => {
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 watch(musicQuery, () => {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(loadTracks, 300);
+    searchTimer = setTimeout(loadTracks, SEARCH_DEBOUNCE_MS);
 });
 
 const soundtrack = useReelSoundtrack();
@@ -210,9 +223,15 @@ const refreshSelectedAudio = async (): Promise<boolean> => {
         const fresh = await audioDetailsHttp.get(
             audioShow.url({ account: props.accountId, audioId: audio.id }),
         );
+        const current = selectedAudio.value;
+
+        if (!fresh || current?.id !== audio.id) {
+            return false;
+        }
+
         updateMeta({
             audio: {
-                ...audio,
+                ...current,
                 cover_url: fresh.cover_url,
                 preview_url: fresh.preview_url,
             },
@@ -231,7 +250,10 @@ const onSelectedLinkBroken = (url: string | null | undefined): void => {
 };
 const playingId = soundtrack.playingAudioId;
 
+let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+
 const stopPreview = (): void => {
+    clearTimeout(hoverTimer);
     soundtrack.stop();
 };
 
@@ -259,8 +281,6 @@ const togglePreview = (track: InstagramAudio): void => {
     );
 };
 
-let hoverTimer: ReturnType<typeof setTimeout> | undefined;
-
 const startHoverPreview = (track: InstagramAudio): void => {
     clearTimeout(hoverTimer);
     if (!isUsable(track.preview_url) || playingId.value === track.id) return;
@@ -269,7 +289,7 @@ const startHoverPreview = (track: InstagramAudio): void => {
             soundtrack.play(track.id, track.preview_url as string, 100, () =>
                 markBroken(track.preview_url),
             ),
-        150,
+        HOVER_PREVIEW_DELAY_MS,
     );
 };
 
@@ -394,7 +414,6 @@ const dismissCollaboratorNotice = (): void => {
     collaboratorNoticeOpen.value = false;
 };
 
-
 const trialGraduation = computed(
     () => (props.meta.trial_graduation as string | null | undefined) ?? '',
 );
@@ -406,14 +425,16 @@ const trialHint = computed(() => TRIAL_HINTS[trialGraduation.value] ?? null);
 const pendingTrial = ref<string | null>(null);
 const trialCheckOpen = computed(() => pendingTrial.value !== null);
 
-const trialOptionsEl = useTemplateRef<HTMLElement>('trialOptions');
-const trialAnchor = computed(
-    () =>
-        trialOptionsEl.value
-            ?.querySelector(
-                `[data-testid="instagram-trial-reel-${pendingTrial.value || 'off'}"]`,
-            )
-            ?.closest('label') ?? undefined,
+const trialOptionLabels = new Map<string, HTMLElement>();
+const rememberTrialOption = (value: string, element: unknown): void => {
+    if (element instanceof HTMLElement) {
+        trialOptionLabels.set(value, element);
+    }
+};
+const trialAnchor = computed(() =>
+    pendingTrial.value === null
+        ? undefined
+        : trialOptionLabels.get(pendingTrial.value),
 );
 
 const selectTrial = (value: string): void => {
@@ -436,10 +457,27 @@ const confirmTrialCheck = (): void => {
     updateMeta({ trial_graduation: value });
 };
 
+watch(
+    () => props.accountId,
+    () => {
+        tracks.value = [];
+        musicQuery.value = '';
+        refreshedAudioIds.clear();
+    },
+);
+
+const ownsPlayingAudio = (): boolean =>
+    playingId.value !== null &&
+    (playingId.value === selectedAudio.value?.id ||
+        tracks.value.some((track) => track.id === playingId.value));
+
 onUnmounted(() => {
     clearTimeout(searchTimer);
     clearTimeout(hoverTimer);
-    stopPreview();
+
+    if (ownsPlayingAudio()) {
+        soundtrack.stop();
+    }
 });
 </script>
 
@@ -674,8 +712,6 @@ onUnmounted(() => {
                                 :data-testid="`instagram-music-track-${track.id}`"
                                 @mouseenter="startHoverPreview(track)"
                                 @mouseleave="stopHoverPreview(track)"
-                                @focus="startHoverPreview(track)"
-                                @blur="stopHoverPreview(track)"
                                 @click="selectTrack(track)"
                             >
                                 <span
@@ -767,60 +803,60 @@ onUnmounted(() => {
                             v-if="collaborators.length > 0"
                             class="flex flex-wrap items-center gap-2"
                         >
-                        <span
-                            v-for="username in collaborators"
-                            :key="username"
-                            class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
-                        >
-                            <a
-                                :href="instagramProfileUrl(username)"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="underline-offset-2 hover:underline"
-                                :data-testid="`instagram-collaborator-${username}`"
-                                >@{{ username }}</a
+                            <span
+                                v-for="username in collaborators"
+                                :key="username"
+                                class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
                             >
-                            <button
-                                type="button"
-                                class="rounded text-muted-foreground hover:text-foreground"
-                                :data-testid="`instagram-collaborator-remove-${username}`"
-                                :aria-label="
-                                    $t('posts.form.instagram.collaborators.remove', {
-                                        username,
-                                    })
-                                "
-                                :disabled="disabled"
-                                @click="removeCollaborator(username)"
-                            >
-                                <IconX class="size-3.5" />
-                            </button>
-                        </span>
+                                <a
+                                    :href="instagramProfileUrl(username)"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="underline-offset-2 hover:underline"
+                                    :data-testid="`instagram-collaborator-${username}`"
+                                    >@{{ username }}</a
+                                >
+                                <button
+                                    type="button"
+                                    class="rounded text-muted-foreground hover:text-foreground"
+                                    :data-testid="`instagram-collaborator-remove-${username}`"
+                                    :aria-label="
+                                        $t('posts.form.instagram.collaborators.remove', {
+                                            username,
+                                        })
+                                    "
+                                    :disabled="disabled"
+                                    @click="removeCollaborator(username)"
+                                >
+                                    <IconX class="size-3.5" />
+                                </button>
+                            </span>
                         </div>
                         <div
                             v-if="collaborators.length < MAX_COLLABORATORS"
                             class="flex items-center gap-2"
                         >
                             <div class="relative min-w-0 flex-1">
-                            <IconAt
-                                class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-                            />
-                            <Input
-                                v-model="collaboratorDraft"
-                                type="text"
-                                class="pl-8"
-                                autocomplete="off"
-                                data-testid="instagram-collaborator-input"
-                                :placeholder="
-                                    $t(
-                                        'posts.form.instagram.collaborators.placeholder',
-                                    )
-                                "
-                                :aria-label="
-                                    $t('posts.form.instagram.collaborators.add')
-                                "
-                                :disabled="disabled"
-                                @keydown="onCollaboratorKeydown"
-                            />
+                                <IconAt
+                                    class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+                                />
+                                <Input
+                                    v-model="collaboratorDraft"
+                                    type="text"
+                                    class="pl-8"
+                                    autocomplete="off"
+                                    data-testid="instagram-collaborator-input"
+                                    :placeholder="
+                                        $t(
+                                            'posts.form.instagram.collaborators.placeholder',
+                                        )
+                                    "
+                                    :aria-label="
+                                        $t('posts.form.instagram.collaborators.add')
+                                    "
+                                    :disabled="disabled"
+                                    @keydown="onCollaboratorKeydown"
+                                />
                             </div>
                             <Button
                                 type="button"
@@ -843,6 +879,7 @@ onUnmounted(() => {
                     align="start"
                     class="w-80 space-y-3"
                     data-testid="instagram-collaborators-notice"
+                    @open-auto-focus.prevent
                     @escape-key-down="dismissCollaboratorNotice"
                     @pointer-down-outside="dismissCollaboratorNotice"
                 >
@@ -866,8 +903,11 @@ onUnmounted(() => {
             <InputError :message="collaboratorError" />
         </SettingsRow>
 
-        <SettingsRow v-if="isReel" :label="$t('posts.form.instagram.trial_reel.label')"
-            :align-top="Boolean(trialHint) && collaborators.length === 0">
+        <SettingsRow
+            v-if="isReel"
+            :label="$t('posts.form.instagram.trial_reel.label')"
+            :align-top="Boolean(trialHint) && collaborators.length === 0"
+        >
             <template #label>
                 <span data-single-line>{{
                     $t('posts.form.instagram.trial_reel.label')
@@ -882,28 +922,29 @@ onUnmounted(() => {
             </p>
             <Popover v-else :open="trialCheckOpen">
                 <PopoverAnchor :reference="trialAnchor" as-child>
-                    <div ref="trialOptions">
-                    <RadioGroup
-                        :model-value="trialGraduation"
-                        :disabled="disabled"
-                        orientation="horizontal"
-                        :aria-label="$t('posts.form.instagram.trial_reel.label')"
-                        class="flex min-h-8 flex-wrap items-center gap-x-5 gap-y-2"
-                        data-testid="instagram-trial-reel"
-                        @update:model-value="selectTrial(String($event))"
-                    >
-                        <label
-                            v-for="option in TRIAL_OPTIONS"
-                            :key="option.value"
-                            class="flex cursor-pointer items-center gap-2 text-sm text-foreground has-disabled:cursor-not-allowed has-disabled:opacity-50"
+                    <div>
+                        <RadioGroup
+                            :model-value="trialGraduation"
+                            :disabled="disabled"
+                            orientation="horizontal"
+                            :aria-label="$t('posts.form.instagram.trial_reel.label')"
+                            class="flex min-h-8 flex-wrap items-center gap-x-5 gap-y-2"
+                            data-testid="instagram-trial-reel"
+                            @update:model-value="selectTrial(String($event))"
                         >
-                            <RadioGroupItem
-                                :value="option.value"
-                                :data-testid="`instagram-trial-reel-${option.value || 'off'}`"
-                            />
-                            <span data-single-line>{{ $t(option.labelKey) }}</span>
-                        </label>
-                    </RadioGroup>
+                            <label
+                                v-for="option in TRIAL_OPTIONS"
+                                :key="option.value"
+                                :ref="(element) => rememberTrialOption(option.value, element)"
+                                class="flex cursor-pointer items-center gap-2 text-sm text-foreground has-disabled:cursor-not-allowed has-disabled:opacity-50"
+                            >
+                                <RadioGroupItem
+                                    :value="option.value"
+                                    :data-testid="`instagram-trial-reel-${option.value || 'off'}`"
+                                />
+                                <span data-single-line>{{ $t(option.labelKey) }}</span>
+                            </label>
+                        </RadioGroup>
                     </div>
                 </PopoverAnchor>
                 <PopoverContent
@@ -913,59 +954,7 @@ onUnmounted(() => {
                     @escape-key-down="cancelTrialCheck"
                     @pointer-down-outside="cancelTrialCheck"
                 >
-                    <div
-                        class="flex justify-center overflow-hidden rounded-lg bg-amber-100 px-6 pt-4 dark:bg-amber-300/10"
-                        aria-hidden="true"
-                        data-testid="instagram-trial-reel-illustration"
-                    >
-                        <div
-                            class="w-full space-y-2 rounded-t-lg bg-background p-3 pb-2.5 shadow-xs ring-1 ring-amber-900/5 dark:bg-card dark:ring-white/10"
-                        >
-                            <div
-                                class="space-y-1.5 rounded-md border border-amber-400 bg-amber-50 p-2 dark:border-amber-400/60 dark:bg-amber-400/10"
-                            >
-                                <div class="flex items-center gap-1.5">
-                                    <IconFlask
-                                        class="size-3.5 text-amber-600 dark:text-amber-300"
-                                        :stroke-width="1.5"
-                                    />
-                                    <span
-                                        class="flex-1 text-[10px] font-medium text-foreground"
-                                        >{{
-                                            $t('posts.form.instagram.trial_reel.badge')
-                                        }}</span
-                                    >
-                                    <span
-                                        class="flex h-3 w-5 items-center justify-end rounded-full bg-amber-400 p-0.5 dark:bg-amber-400/80"
-                                    >
-                                        <span
-                                            class="size-2 rounded-full bg-white dark:bg-amber-950"
-                                        />
-                                    </span>
-                                </div>
-                                <span
-                                    class="block h-1 w-full rounded-full bg-amber-300/60 dark:bg-amber-300/25"
-                                />
-                                <span
-                                    class="block h-1 w-4/5 rounded-full bg-amber-300/60 dark:bg-amber-300/25"
-                                />
-                            </div>
-                            <span
-                                class="block h-1 w-2/3 rounded-full bg-muted-foreground/20"
-                            />
-                            <span
-                                class="block h-1 w-1/2 rounded-full bg-muted-foreground/20"
-                            />
-                            <div class="flex gap-2 pt-1">
-                                <span
-                                    class="h-4 flex-1 rounded-md border border-border bg-muted"
-                                />
-                                <span
-                                    class="h-4 flex-1 rounded-md bg-primary-strong dark:bg-primary"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    <TrialReelIllustration />
                     <p class="text-sm font-semibold">
                         {{ $t('posts.form.instagram.trial_reel.check_title') }}
                     </p>

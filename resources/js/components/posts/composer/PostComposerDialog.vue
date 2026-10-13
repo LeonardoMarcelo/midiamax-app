@@ -1858,18 +1858,14 @@ const saveDraftAndLinkFacebook = (account: ComposerAccount): void => {
     const linkFacebook = (): void =>
         openConnectStep('instagram-facebook', account.id);
 
-    if (movesToDrafts.value) {
-        submit(
-            scheduleMode.value === 'now'
-                ? PostStatus.Publishing
-                : PostStatus.Scheduled,
-            linkFacebook,
-        );
+    const keepsSchedule =
+        props.initialPost?.status === PostStatus.Scheduled &&
+        scheduleMode.value !== 'now';
 
-        return;
-    }
-
-    submit(PostStatus.Draft, linkFacebook);
+    submit(
+        keepsSchedule ? PostStatus.Scheduled : PostStatus.Draft,
+        linkFacebook,
+    );
 };
 
 const submitSelectedSchedule = (): void => {
