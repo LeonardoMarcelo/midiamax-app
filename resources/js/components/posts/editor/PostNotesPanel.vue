@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { IconArrowUp, IconLoader2, IconMessage } from '@tabler/icons-vue';
+import { usePage } from '@inertiajs/vue3';
+import { IconArrowUp, IconLoader2 } from '@tabler/icons-vue';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 import PostNoteItem from '@/components/posts/editor/PostNoteItem.vue';
+import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     InputGroup,
@@ -36,6 +38,9 @@ const props = defineProps<{
 const emit = defineEmits<{
     countChange: [delta: number];
 }>();
+
+const page = usePage();
+const currentUser = computed(() => page.props.auth.user);
 
 const csrfToken =
     document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
@@ -243,18 +248,18 @@ watch(
 </script>
 
 <template>
-    <div class="flex min-h-0 flex-col">
+    <section class="flex min-h-0 flex-col gap-3">
         <div
             ref="scrollContainer"
             class="max-h-80 min-h-0 overflow-y-auto overscroll-contain"
             data-testid="notes-list"
         >
-            <div v-if="hasOlderNotes" class="flex justify-center pt-2">
+            <div v-if="hasOlderNotes" class="flex justify-start pb-2">
                 <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    class="text-muted-foreground"
+                    class="-ms-2 text-muted-foreground"
                     :disabled="loading"
                     @click="loadOlderNotes"
                 >
@@ -268,33 +273,27 @@ watch(
 
             <div
                 v-if="loading && notes.length === 0"
-                class="flex items-center justify-center py-10"
+                class="flex items-center gap-3 py-1"
             >
                 <IconLoader2
-                    class="size-5 animate-spin text-muted-foreground"
+                    class="size-4 animate-spin text-muted-foreground"
                 />
             </div>
 
-            <div
+            <p
                 v-else-if="notes.length === 0"
-                class="flex flex-col items-center px-6 py-5 text-center"
+                class="py-1 text-sm text-muted-foreground"
                 data-testid="notes-empty"
             >
-                <div
-                    class="mb-3 flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground"
-                >
-                    <IconMessage class="size-4.5" stroke-width="1.75" />
-                </div>
-                <p class="text-sm font-emphasis text-foreground">
-                    {{ $t('notes.empty_title') }}
-                </p>
-                <p class="mt-0.5 text-xs text-muted-foreground">
-                    {{ $t('notes.empty_description') }}
-                </p>
-            </div>
+                {{ $t('notes.empty') }}
+            </p>
 
-            <ul v-else class="flex flex-col gap-1 px-2 py-2">
-                <li v-for="note in notes" :key="note.id">
+            <ol v-else class="flex flex-col">
+                <li
+                    v-for="note in notes"
+                    :key="note.id"
+                    class="relative pb-3 last:pb-0 [&:not(:last-child)]:before:absolute [&:not(:last-child)]:before:start-[13.5px] [&:not(:last-child)]:before:top-9 [&:not(:last-child)]:before:bottom-1 [&:not(:last-child)]:before:w-px [&:not(:last-child)]:before:bg-border-strong"
+                >
                     <PostNoteItem
                         :note="note"
                         :current-user-id="currentUserId"
@@ -303,11 +302,18 @@ watch(
                         @delete="deleteNote(note)"
                     />
                 </li>
-            </ul>
+            </ol>
         </div>
 
-        <div class="shrink-0 px-4 pt-1 pb-4">
-            <InputGroup class="bg-card" data-testid="note-composer">
+        <div class="flex shrink-0 items-center gap-3">
+            <Avatar
+                v-if="currentUser"
+                :src="currentUser.photo_url"
+                :name="currentUser.name"
+                class="size-7 shrink-0 text-xs"
+                fallback-class="bg-sidebar-accent text-sidebar-accent-foreground"
+            />
+            <InputGroup class="min-w-0 flex-1" data-testid="note-composer">
                 <InputGroupInput
                     ref="composerInput"
                     v-model="newBody"
@@ -336,5 +342,5 @@ watch(
                 </InputGroupAddon>
             </InputGroup>
         </div>
-    </div>
+    </section>
 </template>

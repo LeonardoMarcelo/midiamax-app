@@ -986,30 +986,14 @@ defineExpose({ openDetails });
                 class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none"
                 :data-testid="`post-notes-section-${post.id}`"
             >
-                <section
-                    class="border-t border-border-strong bg-secondary/50"
+                <PostNotesPanel
+                    class="px-4 pt-2 pb-4"
+                    :post-id="post.id"
+                    :current-user-id="authUserId"
+                    :highlight-note-id="highlightNoteId"
                     :aria-label="$t('notes.title')"
-                >
-                    <header class="flex items-baseline gap-2 px-4 pt-4 pb-1">
-                        <h3 class="text-sm font-medium text-foreground">
-                            {{ $t('notes.title') }}
-                        </h3>
-                        <span
-                            v-if="noteCount > 0"
-                            class="text-sm text-muted-foreground tabular-nums"
-                            >{{ noteCount }}</span
-                        >
-                        <p class="ms-auto truncate text-xs text-muted-foreground">
-                            {{ $t('notes.panel_hint') }}
-                        </p>
-                    </header>
-                    <PostNotesPanel
-                        :post-id="post.id"
-                        :current-user-id="authUserId"
-                        :highlight-note-id="highlightNoteId"
-                        @count-change="changeNoteCount"
-                    />
-                </section>
+                    @count-change="changeNoteCount"
+                />
             </CollapsibleContent>
         </article>
         </Collapsible>
