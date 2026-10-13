@@ -25,7 +25,7 @@ Legenda: 🔴 sem isso não sobe · 🟡 sem isso falta função · ⚪ opcional
 | ✅   | 4 Reverb                | chaves geradas e replicadas no GitHub                                                                                             |
 | ✅   | 5 Passport              | par RSA 4096 gerado                                                                                                               |
 | ❌   | 6 Mídia (R2)           | bucket não criado                                                                                                                |
-| ⚠️ | 7 E-mail                | envia, mas remetente de teste só entrega para o dono da conta                                                                    |
+| ✅ | 7 E-mail                | SMTP do Gmail configurado e entregando                                                                                            |
 | ✅   | 8 Stripe                | chaves, preços mensais e anuais, webhook validado ponta a ponta                                                                  |
 | ❌   | 9 Login social          | desligado                                                                                                                         |
 | ⚠️ | 10 Redes sociais        | Telegram ok · Discord sem bot token · Meta sem redirects · YouTube em projeto de terceiro · LinkedIn e Pinterest não criados |
@@ -181,32 +181,66 @@ complica backup).
 Liga verificação de e-mail, reset de senha e convite de equipe. O default da
 imagem é `log` — sem SMTP real, nada disso chega.
 
-**Resend** — https://resend.com → API Keys
+### Em uso: SMTP do Gmail
 
 ```env
 MAIL_MAILER=smtp
-MAIL_HOST=smtp.resend.com
-MAIL_PORT=587
-MAIL_USERNAME=resend
-MAIL_PASSWORD=
-MAIL_SCHEME=smtp
-MAIL_FROM_ADDRESS=nao-responda@midiamax.com.br
-MAIL_FROM_NAME=MidiaMax
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=465
+MAIL_SCHEME=smtps
+MAIL_USERNAME=<conta@gmail.com>
+MAIL_PASSWORD=<senha de app, 16 caracteres>
+MAIL_FROM_ADDRESS=<a mesma conta>
+MAIL_FROM_NAME=<nome exibido>
 ```
 
-`MAIL_PASSWORD` é a API key (`re_...`).
+A senha **não é a do Gmail**: é uma *senha de app*, gerada em
+https://myaccount.google.com/apppasswords (exige verificação em duas etapas
+ligada). São 16 caracteres, normalmente exibidos em 4 grupos.
 
-Três coisas descobertas testando:
+**Porta e esquema andam juntos:**
 
-1. **`MAIL_SCHEME=tls` não existe no Laravel** e derruba todo envio com
-   *"The tls scheme is not supported"*. Use `smtp` (STARTTLS/587) ou `smtps`
-   (TLS/465). O `compose.prod.yaml` do upstream traz `tls`, que está errado.
-2. **`MAIL_MAILER=resend` não funciona** — o mailer existe no `config/mail.php`
-   mas o pacote `resend/resend-laravel` não está instalado. Vá por SMTP.
-3. Com o remetente de teste `onboarding@resend.dev`, o Resend **só entrega para
-   o e-mail dono da conta**. Verifique um domínio em
-   https://resend.com/domains e configure SPF e DKIM, ou todo e-mail para
-   cliente é recusado.
+| Porta | `MAIL_SCHEME` | Como é |
+| --- | --- | --- |
+| 465 | `smtps` | TLS implícito — a conexão já nasce cifrada |
+| 587 | `smtp` | STARTTLS — começa em claro e faz upgrade |
+
+`MAIL_SCHEME=tls` **não existe no Laravel** e derruba todo envio com *"The tls
+scheme is not supported"*. O `compose.prod.yaml` do upstream traz esse valor
+errado.
+
+**`MAIL_FROM_ADDRESS` tem que ser a própria conta autenticada.** O Gmail
+reescreve o remetente para a conta do login; endereço diferente é ignorado ou
+recusado.
+
+### Limites do Gmail
+
+Conta gratuita entrega na ordem de **centenas de e-mails por dia**, e o limite é
+por conta, não por destinatário. Serve para começar e para testar. Quando a base
+crescer — ou quando quiser SPF/DKIM no seu próprio domínio e métricas de entrega
+— migre para um serviço transacional:
+
+```env
+MAIL_HOST=smtp.resend.com
+MAIL_PORT=587
+MAIL_SCHEME=smtp
+MAIL_USERNAME=resend
+MAIL_PASSWORD=<API key re_...>
+```
+
+Testado: o Resend funciona por SMTP. O que **não** funciona é
+`MAIL_MAILER=resend` — o mailer existe no `config/mail.php` mas o pacote
+`resend/resend-laravel` não está instalado. E com o remetente de teste
+`onboarding@resend.dev` ele só entrega para o dono da conta; para enviar a
+clientes, verifique um domínio em https://resend.com/domains.
+
+### Conferir
+
+```bash
+docker compose exec app php artisan tinker --execute="
+Illuminate\Support\Facades\Mail::raw('teste', fn(\$m) => \$m->to('voce@exemplo.com')->subject('teste'));
+echo 'enviado';"
+```
 
 ---
 

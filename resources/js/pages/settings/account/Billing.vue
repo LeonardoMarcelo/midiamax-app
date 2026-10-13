@@ -184,13 +184,6 @@ const selectPlan = (planId: string): void => {
                     <p class="text-sm text-muted-foreground">
                         {{ midiamaxBilling.no_subscription_hint }}
                     </p>
-                    <div>
-                        <Button as-child>
-                            <a href="/subscribe">{{
-                                midiamaxBilling.choose_plan
-                            }}</a>
-                        </Button>
-                    </div>
                 </div>
             </SettingsSection>
 
