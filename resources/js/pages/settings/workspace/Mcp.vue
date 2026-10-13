@@ -39,7 +39,9 @@ defineProps<{
     connectedClients: ConnectedClient[];
 }>();
 
-const docsUrl = 'https://docs.trypost.it/ai/introduction';
+const docsUrl = import.meta.env.VITE_DOCS_URL
+    ? `${import.meta.env.VITE_DOCS_URL}/ai/introduction`
+    : '/';
 const deleteModal = ref<InstanceType<typeof ConfirmDeleteModal> | null>(null);
 
 usePoll(1000, {

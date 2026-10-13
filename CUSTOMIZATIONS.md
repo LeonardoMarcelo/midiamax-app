@@ -11,10 +11,66 @@ Base atual: tag upstream **v2.0.0** (`7b9eeec9`).
 
 ---
 
-## 1. Arquivos do upstream modificados — 4 arquivos
+## 1. Arquivos do upstream modificados — 30 arquivos
 
-Três deles somam 15 linhas. O quarto (`README.md`) é substituição completa, mas
-tem `merge=ours`, então nunca conflita.
+Eram 4 até o rebrand. Subiu para 30 em 13/10/2026 ao trocar a marca TryPost por
+MidiaMax na interface e nos e-mails. **Esse é o custo real de reconfigurar uma
+marca num fork**, e cada arquivo aqui é conflito potencial em todo merge.
+
+Divididos por risco de conflito:
+
+| Grupo | Arquivos | Risco |
+| --- | --- | --- |
+| Núcleo (abaixo) | `bootstrap/providers.php`, `resources/css/app.css`, `.gitattributes` | baixo, 15 linhas |
+| `README.md` | 1 | nenhum — `merge=ours` |
+| Imagens de marca | 5 em `public/` | nenhum — `merge=ours` |
+| E-mails | 13 em `resources/views/mail/` | médio — mudança mecânica, ver abaixo |
+| Frontend | 7 em `resources/js` e `resources/views` | médio |
+
+### Rebrand dos e-mails (13 arquivos) — mudança mecânica
+
+Cada template teve: URLs `https://trypost.it` → `{{ config('app.url') }}`,
+`>TryPost</a>` → `{{ config('app.name') }}`, copyright e `alt` idem, e a
+**tabela de redes sociais do upstream removida** (linkava GitHub, X, YouTube,
+Discord e Instagram *deles* — mandar nosso cliente para lá é pior do que o nome
+errado).
+
+Em conflito de merge, a resolução é re-aplicar o mesmo script:
+
+```python
+TABELA = re.compile(r'\n\s*<table role="presentation"(?:(?!</table>).)*?/images/emails/social/.*?</table>', re.S)
+subs = [(r'href="https://trypost\.it"', 'href="{{ config(\'app.url\') }}"'),
+        (r'>TryPost</a>', ">{{ config('app.name') }}</a>"),
+        (r'alt="TryPost"', 'alt="{{ config(\'app.name\') }}"')]
+```
+
+### Frontend (7 arquivos)
+
+| Arquivo | O que mudou |
+| --- | --- |
+| `resources/js/components/AppLogo.vue` | mark novo (3 barras ascendentes) e wordmark vindo do prop `name` em vez de cravado |
+| `resources/js/components/WorkspaceMenuContent.vue` | menu de ajuda lê `config('midiamax.links')` via `Inertia::share`; item sem link não aparece; bloco de status só com `MIDIAMAX_STATUS_URL` |
+| `resources/js/lib/docs.ts` | `DOCS_URL` vem de `VITE_DOCS_URL` |
+| `resources/js/pages/settings/workspace/Mcp.vue` | idem |
+| `resources/js/app.ts` | fallback do nome |
+| `resources/views/app.blade.php` | fallback do `<title>` |
+| `resources/views/vendor/mail/html/header.blade.php` | `alt` do logo |
+| `resources/js/pages/settings/account/Billing.vue` | estado vazio (ver seção 4) |
+
+**O que NÃO foi trocado, de propósito:**
+
+- `resources/js/types/post.ts` → `PostOrigin.TryPost = 'trypost'` é **valor
+  gravado no banco**, discriminando post criado no app × importado da rede.
+  Trocar quebra dado existente.
+- Defaults em `config/app.php`, `config/mail.php` e `config/trypost.php` — são
+  `env(..., 'TryPost…')` e **nunca disparam**, porque o `.env` define todos.
+  Trocar aumentaria o diff sem mudar nada do que o usuário vê.
+  `TRYPOST_USER_AGENT` é a exceção que importa e está definida no `.env`: sem
+  ela, as requisições às plataformas se identificam como TryPost.
+
+---
+
+### Os 3 arquivos do núcleo
 
 ### `bootstrap/providers.php` (+2 linhas)
 
@@ -163,6 +219,22 @@ Comportamento verificado:
 - **Conferir a cada release:** `git diff <base> <nova-tag> -- routes/app.php`
   (se mudarem a rota `/`) e a assinatura de `Authenticate::handle()` do framework.
 - 121 testes de `tests/Feature/Auth` passando com o bind ativo.
+
+### Estado vazio da tela de billing
+
+`resources/js/pages/settings/account/Billing.vue`.
+
+O upstream esconde a página inteira atrás de `v-if="hasSubscription"` e **não
+tem `v-else`**. Com `REQUIRE_CARD_FOR_TRIAL=false` não existe assinatura durante
+o teste, então `/settings/account/billing` ficava **completamente em branco**
+para todo usuário em trial. Com `REQUIRE_CARD_FOR_TRIAL=true` o problema não
+aparece, porque o checkout cria a assinatura antes.
+
+As strings novas chegam pelo prop `midiamax.billing` (`Inertia::share`), não por
+`$t()`: o `laravel-vue-i18n` do frontend só lê o JSON gerado a partir de `lang/`,
+e as nossas traduções vivem em `lang-midiamax/`.
+
+- **Conferir a cada release:** `git diff <base> <nova-tag> -- resources/js/pages/settings/account/Billing.vue`
 
 ## 5. Decisões que valem lembrar
 

@@ -64,6 +64,15 @@ const props = defineProps<{
 }>();
 
 const page = usePage<SharedData>();
+
+// MidiaMax: strings do estado vazio vem do prop compartilhado (ver
+// MidiaMaxServiceProvider::shareMidiaMaxProps) — o $t do frontend so enxerga
+// o JSON gerado a partir de lang/, e as nossas ficam em lang-midiamax/.
+const midiamaxBilling = computed(
+    () =>
+        (page.props.midiamax as { billing?: Record<string, string> } | undefined)
+            ?.billing ?? {},
+);
 const plans = computed((): PlanOption[] => page.props.plans ?? []);
 const authPlan = computed((): AuthPlan | null => page.props.auth.plan);
 const currentInterval = computed(
@@ -145,6 +154,46 @@ const selectPlan = (planId: string): void => {
 
     <SettingsLayout :title="$t('billing.title')">
         <div class="flex flex-col gap-10">
+            <!--
+                MidiaMax: o upstream esconde a pagina inteira atras de
+                v-if="hasSubscription" e nao tem v-else. Com trial sem cartao
+                (REQUIRE_CARD_FOR_TRIAL=false) nao existe assinatura, entao a
+                tela ficava completamente em branco para todo usuario em teste.
+            -->
+            <SettingsSection
+                v-if="!hasSubscription"
+                :title="$t('billing.plans.current')"
+            >
+                <div
+                    class="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-6"
+                    data-testid="billing-no-subscription"
+                >
+                    <p class="text-base leading-tight font-emphasis text-foreground">
+                        {{ plan?.name ?? midiamaxBilling.no_plan }}
+                    </p>
+                    <p
+                        v-if="onTrial && trialEndsAt"
+                        class="text-sm text-muted-foreground"
+                    >
+                        {{
+                            $t('billing.current_plan.trial_until', {
+                                date: date.formatDate(trialEndsAt),
+                            })
+                        }}
+                    </p>
+                    <p class="text-sm text-muted-foreground">
+                        {{ midiamaxBilling.no_subscription_hint }}
+                    </p>
+                    <div>
+                        <Button as-child>
+                            <a href="/subscribe">{{
+                                midiamaxBilling.choose_plan
+                            }}</a>
+                        </Button>
+                    </div>
+                </div>
+            </SettingsSection>
+
             <SettingsSection
                 v-if="hasSubscription"
                 :title="$t('billing.plans.current')"

@@ -17,23 +17,23 @@ Legenda: 🔴 sem isso não sobe · 🟡 sem isso falta função · ⚪ opcional
 
 ## Status em 13/10/2026
 
-| | Bloco | Situação |
-| --- | --- | --- |
-| ✅ | 1 Aplicação | `APP_KEY` gerada |
-| ✅ | 2 Banco | senha gerada |
-| ✅ | 3 Redis/filas | valores fixos |
-| ✅ | 4 Reverb | chaves geradas e replicadas no GitHub |
-| ✅ | 5 Passport | par RSA 4096 gerado |
-| ❌ | 6 Mídia (R2) | bucket não criado |
-| ⚠️ | 7 E-mail | envia, mas remetente de teste só entrega para o dono da conta |
-| ✅ | 8 Stripe | chaves, preços mensais e anuais, webhook validado ponta a ponta |
-| ❌ | 9 Login social | desligado |
-| ⚠️ | 10 Redes sociais | Telegram ok · Discord sem bot token · Meta sem redirects · YouTube em projeto de terceiro · LinkedIn e Pinterest não criados |
-| ✅ | 11 IA | Gemini gerando em pt-BR |
-| ❌ | 12 Mídia no compositor | não configurado |
-| ⚠️ | 13 Observabilidade | falta allowlist do Horizon em produção |
-| ✅ | 14 URLs internas | páginas no ar |
-| ✅ | 15 Build args | as três configuradas |
+|      | Bloco                   | Situação                                                                                                                        |
+| ---- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| ✅   | 1 Aplicação           | `APP_KEY` gerada                                                                                                                |
+| ✅   | 2 Banco                 | senha gerada                                                                                                                      |
+| ✅   | 3 Redis/filas           | valores fixos                                                                                                                     |
+| ✅   | 4 Reverb                | chaves geradas e replicadas no GitHub                                                                                             |
+| ✅   | 5 Passport              | par RSA 4096 gerado                                                                                                               |
+| ❌   | 6 Mídia (R2)           | bucket não criado                                                                                                                |
+| ⚠️ | 7 E-mail                | envia, mas remetente de teste só entrega para o dono da conta                                                                    |
+| ✅   | 8 Stripe                | chaves, preços mensais e anuais, webhook validado ponta a ponta                                                                  |
+| ❌   | 9 Login social          | desligado                                                                                                                         |
+| ⚠️ | 10 Redes sociais        | Telegram ok · Discord sem bot token · Meta sem redirects · YouTube em projeto de terceiro · LinkedIn e Pinterest não criados |
+| ✅   | 11 IA                   | Gemini gerando em pt-BR                                                                                                           |
+| ❌   | 12 Mídia no compositor | não configurado                                                                                                                  |
+| ⚠️ | 13 Observabilidade      | falta allowlist do Horizon em produção                                                                                          |
+| ✅   | 14 URLs internas        | páginas no ar                                                                                                                    |
+| ✅   | 15 Build args           | as três configuradas                                                                                                             |
 
 Fora do `.env`: **domínio** e **VPS**, que destravam quase todo o resto.
 
@@ -56,13 +56,13 @@ TELESCOPE_ENABLED=false
 LOG_LEVEL=warning
 ```
 
-| Variável | O que faz |
-| --- | --- |
-| `APP_URL` | base de **todas** as URLs geradas, inclusive os redirects de OAuth. Sem barra no fim |
-| `APP_DOMAIN` | domínio que o Caddy usa para emitir o certificado |
+| Variável             | O que faz                                                                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL`           | base de**todas** as URLs geradas, inclusive os redirects de OAuth. Sem barra no fim                                                    |
+| `APP_DOMAIN`        | domínio que o Caddy usa para emitir o certificado                                                                                           |
 | `SELF_HOSTED=false` | **liga o modo SaaS**: cadastro aberto e assinatura obrigatória. Com `true`, `/register` responde 404 e só entra quem tem convite |
-| `WEBHOOK_URL` | base dos webhooks de entrada (Telegram). Vazio usa `APP_URL` |
-| `APP_DEBUG` | `true` em produção expõe stack trace com credenciais |
+| `WEBHOOK_URL`       | base dos webhooks de entrada (Telegram). Vazio usa`APP_URL`                                                                                |
+| `APP_DEBUG`         | `true` em produção expõe stack trace com credenciais                                                                                    |
 
 **`APP_KEY`** — gerar uma vez:
 
@@ -655,11 +655,11 @@ a partir dos labels da imagem — não editar à mão.
 **Não vão no `.env`**: entram no bundle JS no build. Em `midiamax-app` →
 Settings → Secrets and variables → **Actions**:
 
-| Tipo | Nome | Valor |
-| --- | --- | --- |
-| Variable | `APP_NAME` | `MidiaMax` |
-| Variable | `APP_DOMAIN` | `app.midiamax.com.br` |
-| Secret | `REVERB_APP_KEY` | **idêntico** ao do `.env` |
+| Tipo     | Nome               | Valor                              |
+| -------- | ------------------ | ---------------------------------- |
+| Variable | `APP_NAME`       | `MidiaMax`                       |
+| Variable | `APP_DOMAIN`     | `app.midiamax.com.br`            |
+| Secret   | `REVERB_APP_KEY` | **idêntico** ao do `.env` |
 
 Mudar qualquer um exige **rebuild da imagem** — reiniciar o container não basta.
 

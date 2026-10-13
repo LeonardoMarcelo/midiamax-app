@@ -6,6 +6,7 @@ namespace App\MidiaMax\Providers;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Inertia\Inertia;
 
 /**
  * Ponto de entrada unico de toda customizacao MidiaMax.
@@ -82,6 +83,30 @@ class MidiaMaxServiceProvider extends ServiceProvider
         $this->loadMidiaMaxRoutes();
         $this->loadMidiaMaxTranslations();
         $this->alignBillingLabels();
+        $this->shareMidiaMaxProps();
+    }
+
+    /**
+     * Expoe config nossa para o frontend sem editar o HandleInertiaRequests do
+     * upstream. Hoje: os links do menu de ajuda — o upstream cravou os deles
+     * (docs, Discord, GitHub, status) e mandar nosso cliente para la e pior do
+     * que mostrar o nome errado. Link vazio nao aparece no menu.
+     */
+    protected function shareMidiaMaxProps(): void
+    {
+        Inertia::share('midiamax', fn (): array => [
+            'links' => array_filter(config('midiamax.links', [])),
+
+            // Strings nossas ja traduzidas. O laravel-vue-i18n do frontend so
+            // le o JSON gerado a partir de lang/, e as nossas vivem em
+            // lang-midiamax/ — entao elas chegam por aqui, resolvidas no
+            // locale da requisicao.
+            'billing' => [
+                'no_plan' => __('midiamax::billing.no_plan'),
+                'no_subscription_hint' => __('midiamax::billing.no_subscription_hint'),
+                'choose_plan' => __('midiamax::billing.choose_plan'),
+            ],
+        ]);
     }
 
     /**

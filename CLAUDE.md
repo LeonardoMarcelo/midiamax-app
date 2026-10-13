@@ -77,7 +77,7 @@ Sem glob sobre ele, pode. Com glob, use `<nome>-midiamax/` na raiz.
 `database/migrations/midiamax/` é seguro porque os globs de migration usam
 padrão de nome de arquivo (`migrations/*_nome.php`), não listagem de pasta.
 
-Hoje o diff é de **4 arquivos** (15 linhas + o README substituído, que tem `merge=ours`). Esse número é a métrica de saúde do
+Hoje o diff é de **30 arquivos do upstream** — eram 4 antes do rebrand de 13/10/2026.
 fork — se ele crescer rápido, o custo de atualizar cresce junto.
 
 ## Compliance AGPL-3.0 (obrigação legal, não opcional)

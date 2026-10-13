@@ -1,6 +1,8 @@
 import { Platform, type PlatformValue } from '@/types/platform';
 
-export const DOCS_URL = 'https://docs.trypost.it';
+// MidiaMax: definido por VITE_DOCS_URL no build. Sem docs proprio ainda,
+// cai na propria aplicacao em vez de mandar o cliente para outro produto.
+export const DOCS_URL = import.meta.env.VITE_DOCS_URL || '/';
 
 // Anchors of the per-network sections in the media knowledge-base page. The
 // two Instagram and two LinkedIn variants share one section each.

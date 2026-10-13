@@ -154,32 +154,21 @@ const statusTheme = computed(() =>
         : 'light',
 );
 
-const supportLinks = [
-    {
-        key: 'help-center',
-        label: 'sidebar.support.help_center',
-        href: 'https://docs.trypost.it',
-        icon: IconLifebuoy,
-    },
-    {
-        key: 'discord',
-        label: 'sidebar.support.discord',
-        href: 'https://trypost.it/discord',
-        icon: IconBrandDiscord,
-    },
-    {
-        key: 'feature-requests',
-        label: 'sidebar.support.feature_requests',
-        href: 'https://github.com/orgs/trypostit/discussions/categories/feature-requests',
-        icon: IconBulb,
-    },
-    {
-        key: 'github',
-        label: 'sidebar.support.github',
-        href: 'https://github.com/trypostit',
-        icon: IconBrandGithub,
-    },
-];
+// MidiaMax: links nossos, vindos de config('midiamax.links') via
+// Inertia::share(). O que nao estiver configurado some do menu — e melhor
+// nao ter o item do que mandar o cliente para a propriedade de outro produto.
+const midiamaxLinks = computed(
+    () => (page.props.midiamax as { links?: Record<string, string> } | undefined)?.links ?? {},
+);
+
+const supportLinks = computed(() =>
+    [
+        { key: 'help-center', label: 'sidebar.support.help_center', href: midiamaxLinks.value.docs, icon: IconLifebuoy },
+        { key: 'discord', label: 'sidebar.support.discord', href: midiamaxLinks.value.community, icon: IconBrandDiscord },
+        { key: 'feature-requests', label: 'sidebar.support.feature_requests', href: midiamaxLinks.value.feedback, icon: IconBulb },
+        { key: 'github', label: 'sidebar.support.github', href: midiamaxLinks.value.source, icon: IconBrandGithub },
+    ].filter((item): item is { key: string; label: string; href: string; icon: typeof IconLifebuoy } => Boolean(item.href)),
+);
 </script>
 
 <template>
@@ -471,7 +460,10 @@ const supportLinks = [
                             {{ $t(link.label) }}
                         </a>
                     </DropdownMenuItem>
-                    <template v-if="showChatSupport">
+                    <!-- MidiaMax: so mostra o bloco de status se houver uma
+                         pagina de status configurada (MIDIAMAX_STATUS_URL).
+                         Sem ela o iframe apontaria para lugar nenhum. -->
+                    <template v-if="showChatSupport && midiamaxLinks.status">
                         <DropdownMenuSeparator />
                         <DropdownMenuLabel
                             class="px-2 py-1.5 text-xs font-medium tracking-normal text-muted-foreground normal-case"
@@ -481,14 +473,14 @@ const supportLinks = [
                         </DropdownMenuLabel>
                         <DropdownMenuItem as-child>
                             <a
-                                href="https://status.trypost.it"
+                                :href="midiamaxLinks.status"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 :aria-label="$t('sidebar.support.status')"
                                 data-testid="sidebar-support-status"
                             >
                                 <iframe
-                                    :src="`https://status.trypost.it/badge?theme=${statusTheme}`"
+                                    :src="`${midiamaxLinks.status}/badge?theme=${statusTheme}`"
                                     :title="$t('sidebar.support.status')"
                                     width="250"
                                     height="30"

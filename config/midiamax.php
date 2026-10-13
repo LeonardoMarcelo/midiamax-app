@@ -22,6 +22,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Links de apoio exibidos na interface
+    |--------------------------------------------------------------------------
+    |
+    | O upstream cravou no menu de ajuda os links das propriedades DELES (docs,
+    | Discord, GitHub, status). Mandar nosso cliente para la e pior do que
+    | mostrar o nome errado. Aqui os links sao nossos, e o que estiver vazio
+    | simplesmente nao aparece no menu.
+    |
+    | Compartilhados com o frontend por Inertia::share() no provider.
+    |
+    */
+
+    'links' => [
+        'docs' => env('MIDIAMAX_DOCS_URL'),
+        'community' => env('MIDIAMAX_COMMUNITY_URL'),
+        'feedback' => env('MIDIAMAX_FEEDBACK_URL'),
+        'status' => env('MIDIAMAX_STATUS_URL'),
+        'source' => env('MIDIAMAX_SOURCE_URL', 'https://github.com/LeonardoMarcelo/midiamax-app'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Precos exibidos na interface
     |--------------------------------------------------------------------------
     |
