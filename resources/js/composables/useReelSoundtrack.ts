@@ -24,15 +24,21 @@ const stop = (): void => {
     playingAudioId.value = null;
 };
 
-const play = (audioId: string, url: string, volume: number): void => {
+const play = (
+    audioId: string,
+    url: string,
+    volume: number,
+    onUnavailable?: () => void,
+): void => {
     stop();
     const audio = new Audio(url);
     audio.volume = volume / 100;
     audio.addEventListener('ended', stop);
     player = audio;
     playingAudioId.value = audioId;
-    void audio.play().catch(() => {
+    void audio.play().catch((error: unknown) => {
         if (player === audio) stop();
+        if ((error as DOMException)?.name !== 'AbortError') onUnavailable?.();
     });
 };
 

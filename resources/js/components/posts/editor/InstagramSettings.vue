@@ -178,6 +178,13 @@ watch(musicQuery, () => {
 });
 
 const soundtrack = useReelSoundtrack();
+
+const brokenUrls = ref(new Set<string>());
+const isUsable = (url: string | null | undefined): url is string =>
+    Boolean(url) && !brokenUrls.value.has(url as string);
+const markBroken = (url: string | null | undefined): void => {
+    if (url) brokenUrls.value = new Set([...brokenUrls.value, url]);
+};
 const playingId = soundtrack.playingAudioId;
 
 const stopPreview = (): void => {
@@ -191,22 +198,30 @@ const togglePreview = (track: InstagramAudio): void => {
         return;
     }
 
-    if (!track.preview_url) {
+    if (!isUsable(track.preview_url)) {
         soundtrack.stop();
 
         return;
     }
 
-    soundtrack.play(track.id, track.preview_url, track.audio_volume ?? 100);
+    soundtrack.play(
+        track.id,
+        track.preview_url,
+        track.audio_volume ?? 100,
+        () => markBroken(track.preview_url),
+    );
 };
 
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 
 const startHoverPreview = (track: InstagramAudio): void => {
     clearTimeout(hoverTimer);
-    if (!track.preview_url || playingId.value === track.id) return;
+    if (!isUsable(track.preview_url) || playingId.value === track.id) return;
     hoverTimer = setTimeout(
-        () => soundtrack.play(track.id, track.preview_url as string, 100),
+        () =>
+            soundtrack.play(track.id, track.preview_url as string, 100, () =>
+                markBroken(track.preview_url),
+            ),
         150,
     );
 };
@@ -401,7 +416,7 @@ onUnmounted(() => {
                         type="button"
                         class="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted disabled:cursor-default"
                         data-testid="instagram-music-selected-preview"
-                        :disabled="!selectedAudio.preview_url"
+                        :disabled="!isUsable(selectedAudio.preview_url)"
                         :aria-label="
                             playingId === selectedAudio.id
                                 ? $t('posts.form.instagram.music.pause')
@@ -410,17 +425,19 @@ onUnmounted(() => {
                         @click="togglePreview(selectedAudio)"
                     >
                         <img
-                            v-if="selectedAudio.cover_url"
+                            v-if="isUsable(selectedAudio.cover_url)"
                             :src="selectedAudio.cover_url"
                             alt=""
                             class="absolute inset-0 size-full object-cover"
+                            data-testid="instagram-music-selected-cover"
+                            @error="markBroken(selectedAudio.cover_url)"
                         />
                         <IconMusic
                             v-else
                             class="absolute inset-0 m-auto size-5 text-muted-foreground"
                         />
                         <span
-                            v-if="selectedAudio.preview_url"
+                            v-if="isUsable(selectedAudio.preview_url)"
                             class="absolute inset-0 m-auto flex size-7 items-center justify-center rounded-full bg-success text-white"
                         >
                             <IconPlayerPauseFilled
@@ -614,10 +631,11 @@ onUnmounted(() => {
                                     class="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted"
                                 >
                                     <img
-                                        v-if="track.cover_url"
+                                        v-if="isUsable(track.cover_url)"
                                         :src="track.cover_url"
                                         alt=""
                                         class="absolute inset-0 size-full object-cover"
+                                        @error="markBroken(track.cover_url)"
                                     />
                                     <IconMusic
                                         v-else
